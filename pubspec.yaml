@@ -13,3 +13,10 @@ dependencies:
   image_picker: ^1.0.8
 flutter:
   uses-material-design: true
+dev_dependencies:
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "IMG-20261031-WA9506.jpg"
