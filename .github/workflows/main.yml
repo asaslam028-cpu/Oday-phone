@@ -3,12 +3,19 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.5'
+          flutter-version: '3.22.3'
           channel: 'stable'
+          cache: true
+      - name: Fix Android folder if missing
+        run: |
+          if [ ! -d "android" ]; then
+            flutter create . --platforms=android --project-name oday_phone --org com.oday.phone --no-overwrite
+          fi
       - run: flutter pub get
       - run: flutter build apk --release --no-tree-shake-icons
       - uses: actions/upload-artifact@v4
