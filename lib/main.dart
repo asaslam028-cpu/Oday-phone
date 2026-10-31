@@ -37,13 +37,7 @@ class HomePage extends StatelessWidget {
         const SizedBox(height: 20),
         Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)), child: Column(children: [
           const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.phone_iphone, color: Color(0xFF1976D2)), SizedBox(width: 6), Text("كل حاجة لموبايلك في مكان واحد", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))]),
-          const SizedBox(height: 12),
-          Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-            Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: const Color(0xFFE3F2FD), borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.phone_android, color: Color(0xFF1976D2), size: 30)),
-            Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: const Color(0xFFF3E5F5), borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.headset, color: Color(0xFF8E24AA), size: 30)),
-            Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: const Color(0xFFE8F5E9), borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.charging_station, color: Color(0xFF2E7D32), size: 30)),
-            Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: const Color(0xFFFFF3E0), borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.watch, color: Colors.orange, size: 30)),
-          ]),
+ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.asset('IMG-20261031-WA4508.jpg', fit: BoxFit.cover)),
         ])),
       ]),
     );
