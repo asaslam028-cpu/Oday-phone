@@ -17,6 +17,7 @@ jobs:
             flutter create . --platforms=android --project-name oday_phone --org com.oday.phone --no-overwrite
           fi
       - run: flutter pub get
+      - run: dart run flutter_launcher_icons
       - run: flutter build apk --release --no-tree-shake-icons
       - uses: actions/upload-artifact@v4
         with:
