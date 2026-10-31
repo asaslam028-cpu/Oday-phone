@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "389995408138",
+    "project_id": "addy-phone-906bf",
+    "storage_bucket": "addy-phone-906bf.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:389995408138:android:614209467ff022fed3e8f3",
+        "android_client_info": {
+          "package_name": "com.addyphone.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC80zQpeUz8C_eHf0InDTaXAjYHrgyXnzY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:389995408138:android:7abaeefb31ac78c2d3e8f3",
+        "android_client_info": {
+          "package_name": "com.oday.phone"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC80zQpeUz8C_eHf0InDTaXAjYHrgyXnzY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
