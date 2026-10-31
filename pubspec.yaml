@@ -24,3 +24,4 @@ flutter_launcher_icons:
   min_sdk_android: 21
   web:
     generate: false
+    
