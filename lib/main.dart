@@ -80,7 +80,6 @@ class _HomeServiceFormPageState extends State<HomeServiceFormPage> {
 
 class StorePage extends StatefulWidget { const StorePage({super.key}); @override State<StorePage> createState() => _StorePageState(); }
 class _StorePageState extends State<StorePage> {
-  final ImagePicker _picker = ImagePicker();
   bool isAdmin = false;
   final CollectionReference productsRef = FirebaseFirestore.instance.collection('products');
 
