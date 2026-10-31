@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -47,10 +46,10 @@ class HomePage extends StatelessWidget {
         const SizedBox(height: 20),
         SizedBox(height: 56, width: double.infinity, child: ElevatedButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HomeServiceFormPage())), style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2E7D32), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))), icon: const Icon(Icons.delivery_dining, color: Colors.white), label: const Text("اطلب مندوب", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)))),
         const SizedBox(height: 20),
-        Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)), child: Column(children: [
-          const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.phone_iphone, color: Color(0xFF1976D2)), SizedBox(width: 6), Text("كل حاجة لموبايلك في مكان واحد", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))]),
-          const SizedBox(height: 10),
-          ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.asset('IMG-20261031-WA4508.jpg', fit: BoxFit.cover)),
+        Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)), child: const Column(children: [
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.phone_iphone, color: Color(0xFF1976D2)), SizedBox(width: 6), Text("كل حاجة لموبايلك في مكان واحد", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))]),
+          SizedBox(height: 10),
+          Icon(Icons.phone_iphone, size: 150, color: Color(0xFF1976D2)),
         ])),
       ]),
     );
@@ -95,16 +94,10 @@ class _StorePageState extends State<StorePage> {
   }
 
   void addProduct() {
-    String n="", pr="", desc="", color="", cap=""; String img1="", img2="";
+    String n="", pr="", desc="", color="", cap="";
     showDialog(context: context, builder: (_) => StatefulBuilder(builder: (ctx, setD) => AlertDialog(
-      title: const Text("اضافة منتج - صورتين"),
+      title: const Text("اضافة منتج"),
       content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Row(children: [
-          Expanded(child: InkWell(onTap: () async { final XFile? x = await _picker.pickImage(source: ImageSource.gallery); if(x!=null){ setD(()=> img1 = x.path); } }, child: Container(height: 90, decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(10)), child: img1.isEmpty ? const Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.add_a_photo), Text("صورة 1", style: TextStyle(fontSize: 10))]) : Image.file(File(img1), fit: BoxFit.cover, width: double.infinity, height: 90)))),
-          const SizedBox(width: 8),
-          Expanded(child: InkWell(onTap: () async { final XFile? x = await _picker.pickImage(source: ImageSource.gallery); if(x!=null){ setD(()=> img2 = x.path); } }, child: Container(height: 90, decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(10)), child: img2.isEmpty ? const Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.add_a_photo), Text("صورة 2", style: TextStyle(fontSize: 10))]) : Image.file(File(img2), fit: BoxFit.cover, width: double.infinity, height: 90)))),
-        ]),
-        const SizedBox(height: 10),
         TextField(decoration: const InputDecoration(labelText: "اسم المنتج", border: OutlineInputBorder()), onChanged: (v)=> n=v),
         const SizedBox(height: 8),
         TextField(decoration: const InputDecoration(labelText: "السعر", border: OutlineInputBorder()), keyboardType: TextInputType.number, onChanged: (v)=> pr=v),
@@ -119,17 +112,8 @@ class _StorePageState extends State<StorePage> {
         TextButton(onPressed: ()=> Navigator.pop(ctx), child: const Text("الغاء")),
         ElevatedButton(onPressed: () async { 
           if(n.isNotEmpty && pr.isNotEmpty){ 
-            List<String> imgs = []; 
-            if(img1.isNotEmpty) imgs.add(img1); 
-            if(img2.isNotEmpty) imgs.add(img2); 
             await productsRef.add({
-              "name":n,
-              "price":pr,
-              "images":imgs, 
-              "image": imgs.isNotEmpty ? imgs[0] : "", 
-              "description":desc, 
-              "color":color, 
-              "capabilities":cap,
+              "name":n, "price":pr, "description":desc, "color":color, "capabilities":cap,
               "createdAt": FieldValue.serverTimestamp()
             }); 
             Navigator.pop(ctx);
@@ -143,10 +127,11 @@ class _StorePageState extends State<StorePage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(title: const Text("متجر الاكسسوارات"), backgroundColor: const Color(0xFF8E24AA), actions: [IconButton(onPressed: (){ if(isAdmin) setState(()=> isAdmin=false); else askAdminPassword(); }, icon: Icon(isAdmin ? Icons.lock_open : Icons.lock, color: Colors.white))]),
-      floatingActionButton: isAdmin ? FloatingActionButton(onPressed: addProduct, backgroundColor: const Color(0xFF8E24AA), child: const Icon(Icons.add_a_photo, color: Colors.white)) : null,
+      floatingActionButton: isAdmin ? FloatingActionButton(onPressed: addProduct, backgroundColor: const Color(0xFF8E24AA), child: const Icon(Icons.add, color: Colors.white)) : null,
       body: StreamBuilder<QuerySnapshot>(
         stream: productsRef.snapshots(),
         builder: (context, snapshot) {
+          if(snapshot.hasError) return Center(child: Text("خطأ: ${snapshot.error}"));
           if(!snapshot.hasData) return const Center(child: CircularProgressIndicator());
           final docs = snapshot.data!.docs;
           if(docs.isEmpty) {
@@ -155,13 +140,10 @@ class _StorePageState extends State<StorePage> {
           return GridView.builder(padding: const EdgeInsets.all(10), gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 0.68, crossAxisSpacing: 10, mainAxisSpacing: 10), itemCount: docs.length, itemBuilder: (_, i){
             final it = docs[i].data() as Map<String, dynamic>;
             final docId = docs[i].id;
-            List imgs = it['images'] ?? (it['image']!=null && it['image'].toString().isNotEmpty ? [it['image']] : []);
-            String firstImg = imgs.isNotEmpty ? imgs[0].toString() : "";
-            bool hasImg = firstImg.isNotEmpty && File(firstImg).existsSync();
             return InkWell(
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProductDetailPage(product: it, docId: docId, onDelete: (){ productsRef.doc(docId).delete(); }, isAdmin: isAdmin))),
               child: Card(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                ClipRRect(borderRadius: const BorderRadius.vertical(top: Radius.circular(16)), child: hasImg ? Image.file(File(firstImg), height: 140, width: double.infinity, fit: BoxFit.cover) : Container(height: 140, width: double.infinity, color: const Color(0xFFF3E5F5), child: const Icon(Icons.headset, size: 60, color: Color(0xFF8E24AA)))),
+                Container(height: 140, width: double.infinity, decoration: const BoxDecoration(color: Color(0xFFF3E5F5), borderRadius: BorderRadius.vertical(top: Radius.circular(16))), child: const Icon(Icons.headset, size: 60, color: Color(0xFF8E24AA))),
                 Padding(padding: const EdgeInsets.all(8), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(it['name'] ?? "", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
                   Text("${it['price']} جنيه", style: const TextStyle(color: Color(0xFF8E24AA), fontWeight: FontWeight.bold, fontSize: 13)),
@@ -187,51 +169,11 @@ class ProductDetailPage extends StatefulWidget {
 }
 
 class _ProductDetailPageState extends State<ProductDetailPage> {
-  int currentPage = 0;
   @override Widget build(BuildContext context) {
-    List imgs = widget.product['images'] ?? [];
-    if(imgs.isEmpty && widget.product['image']!=null && widget.product['image'].toString().isNotEmpty){ imgs = [widget.product['image']]; }
     return Scaffold(
       appBar: AppBar(title: Text(widget.product['name'] ?? ""), backgroundColor: const Color(0xFF8E24AA), actions: [if(widget.isAdmin) IconButton(onPressed: (){ widget.onDelete(); Navigator.pop(context); }, icon: const Icon(Icons.delete))]),
       body: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        SizedBox(
-          height: 350,
-          width: double.infinity,
-          child: imgs.isEmpty ? Container(color: const Color(0xFFF3E5F5), child: const Icon(Icons.headset, size: 100, color: Color(0xFF8E24AA))) : Stack(
-            children: [
-              PageView.builder(
-                itemCount: imgs.length,
-                onPageChanged: (i)=> setState(()=> currentPage=i),
-                itemBuilder: (_, idx){
-                  String p = imgs[idx].toString();
-                  bool exists = false;
-                  try { exists = File(p).existsSync(); } catch(e) { exists = false; }
-                  return exists ? Image.file(File(p), fit: BoxFit.contain, width: double.infinity) : Container(color: Colors.grey[200], child: const Icon(Icons.broken_image, size: 50));
-                },
-              ),
-              if(imgs.length>1)
-                Positioned(
-                  bottom: 12,
-                  left: 0,
-                  right: 0,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(imgs.length, (i){
-                      return Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 3),
-                        width: currentPage==i ? 20 : 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: currentPage==i ? const Color(0xFF8E24AA) : Colors.grey,
-                          borderRadius: BorderRadius.circular(4)
-                        ),
-                      );
-                    }),
-                  ),
-                ),
-            ],
-          ),
-        ),
+        Container(height: 350, width: double.infinity, color: const Color(0xFFF3E5F5), child: const Icon(Icons.headset, size: 100, color: Color(0xFF8E24AA))),
         Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(widget.product['name'] ?? "", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
           Text("${widget.product['price']} جنيه", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF8E24AA))),
