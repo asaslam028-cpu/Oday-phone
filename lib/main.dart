@@ -236,7 +236,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 ),
                 if(imgs.length>1) Positioned(
                   bottom: 12, left: 0, right: 0,
-                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: List.generate(imgs.length, (i)=> Container(margin: const EdgeInsets.symmetric(horizontal: 3), width: currentPage==i ? 20 : 8, height: 8, decoration: BoxDecoration(color: currentPage==i ? const Color(0xFF8E24AA) : Colors.grey, borderRadius: BorderRadius.circular(4)))),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: List.generate(imgs.length, (i)=> Container(margin: const EdgeInsets.symmetric(horizontal: 3), width: currentPage==i ? 20 : 8, height: 8, decoration: BoxDecoration(color: currentPage==i ? const Color(0xFF8E24AA) : Colors.grey, borderRadius: BorderRadius.circular(4)))))),
                 )
               ]),
         ),
