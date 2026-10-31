@@ -1,23 +1,43 @@
 name: Build APK
-on: [push]
+
+on:
+  push:
+    branches: [ main ]
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.3'
+          flutter-version: '3.22.0'
           channel: 'stable'
-          cache: true
-      - name: Fix Android folder if missing
-        run: |
-          if [ ! -d "android" ]; then
-            flutter create . --platforms=android --project-name oday_phone --org com.oday.phone --no-overwrite
-          fi
+
+      - run: flutter create . --platforms=android --project-name oday_phone
+      
       - run: flutter pub get
+
+      - name: Fix Icon
+        run: |
+          echo 'flutter_launcher_icons:
+            android: "launcher_icon"
+            ios: false
+            image_path: "IMG-20261031-WA9506.jpg"
+            min_sdk_android: 21
+            web:
+              generate: false' > flutter_launcher_icons.yaml
+
+      - run: dart run flutter_launcher_icons
+
       - run: flutter build apk --release --no-tree-shake-icons
+
       - uses: actions/upload-artifact@v4
         with:
           name: oday-phone-apk
