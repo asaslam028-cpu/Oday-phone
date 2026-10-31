@@ -1,43 +1,29 @@
 name: Build APK
-
 on:
   push:
     branches: [ main ]
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+      - name: Backup google-services.json
+        run: cp android/app/google-services.json /tmp/google-services.json || echo "no file"
       - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
-          
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.22.0'
           channel: 'stable'
-
-      - run: flutter create . --platforms=android --project-name oday_phone
-      
-      - run: flutter pub get
-
-      - name: Fix Icon
+      - name: Recreate Android with correct package
         run: |
-          echo 'flutter_launcher_icons:
-            android: "launcher_icon"
-            ios: false
-            image_path: "IMG-20261031-WA9506.jpg"
-            min_sdk_android: 21
-            web:
-              generate: false' > flutter_launcher_icons.yaml
-
-      - run: dart run flutter_launcher_icons
-
+          rm -rf android
+          flutter create . --platforms=android --org com.oday --project-name phone
+          cp /tmp/google-services.json android/app/google-services.json
+      - run: flutter pub get
       - run: flutter build apk --release --no-tree-shake-icons
-
       - uses: actions/upload-artifact@v4
         with:
           name: oday-phone-apk
