@@ -1,12 +1,24 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-void main() => runApp(const OdayApp());
-class OdayApp extends StatelessWidget { const OdayApp({super.key}); @override Widget build(BuildContext context) { return MaterialApp(debugShowCheckedModeBanner: false, home: const HomePage()); } }
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  runApp(const OdayApp());
+}
+
+class OdayApp extends StatelessWidget { 
+  const OdayApp({super.key}); 
+  @override 
+  Widget build(BuildContext context) { 
+    return const MaterialApp(debugShowCheckedModeBanner: false, home: HomePage()); 
+  } 
+}
 
 Future<void> openWhatsApp(String message) async {
   const phone = "201069068091";
@@ -19,7 +31,7 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFE8F0FE), // لون سماوي فاتح شيك بتاع عدي فون
+      backgroundColor: const Color(0xFFE8F0FE),
       appBar: AppBar(backgroundColor: const Color(0xFF1976D2), centerTitle: true, title: const Text("Oday Phone - داخل الإسماعيلية فقط", style: TextStyle(color: Colors.white, fontSize: 16))),
       body: ListView(padding: const EdgeInsets.all(16), children: [
         Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)), child: Column(children: [
@@ -37,7 +49,8 @@ class HomePage extends StatelessWidget {
         const SizedBox(height: 20),
         Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)), child: Column(children: [
           const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.phone_iphone, color: Color(0xFF1976D2)), SizedBox(width: 6), Text("كل حاجة لموبايلك في مكان واحد", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))]),
-ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.asset('IMG-20261031-WA4508.jpg', fit: BoxFit.cover)),
+          const SizedBox(height: 10),
+          ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.asset('IMG-20261031-WA4508.jpg', fit: BoxFit.cover)),
         ])),
       ]),
     );
@@ -62,12 +75,10 @@ class _HomeServiceFormPageState extends State<HomeServiceFormPage> {
 
 class StorePage extends StatefulWidget { const StorePage({super.key}); @override State<StorePage> createState() => _StorePageState(); }
 class _StorePageState extends State<StorePage> {
-  List<Map> products = [];
   final ImagePicker _picker = ImagePicker();
   bool isAdmin = false;
-  @override void initState() { super.initState(); load(); }
-  Future<void> load() async { final p = await SharedPreferences.getInstance(); final d = p.getString('prods_v2'); if(d!=null) setState(()=> products = List<Map>.from(jsonDecode(d))); }
-  Future<void> save() async { final p = await SharedPreferences.getInstance(); await p.setString('prods_v2', jsonEncode(products)); }
+  final CollectionReference productsRef = FirebaseFirestore.instance.collection('products');
+
   void askAdminPassword() {
     String pass = "";
     showDialog(context: context, builder: (_) => AlertDialog(
@@ -79,6 +90,7 @@ class _StorePageState extends State<StorePage> {
       ],
     ));
   }
+
   void addProduct() {
     String n="", pr="", desc="", color="", cap=""; String img1="", img2="";
     showDialog(context: context, builder: (_) => StatefulBuilder(builder: (ctx, setD) => AlertDialog(
@@ -102,42 +114,72 @@ class _StorePageState extends State<StorePage> {
       ])),
       actions: [
         TextButton(onPressed: ()=> Navigator.pop(ctx), child: const Text("الغاء")),
-        ElevatedButton(onPressed: (){ if(n.isNotEmpty && pr.isNotEmpty){ List<String> imgs = []; if(img1.isNotEmpty) imgs.add(img1); if(img2.isNotEmpty) imgs.add(img2); setState(()=> products.add({"name":n,"price":pr,"images":imgs, "image": imgs.isNotEmpty ? imgs[0] : "", "description":desc, "color":color, "capabilities":cap})); save(); Navigator.pop(ctx);} }, child: const Text("حفظ"))
+        ElevatedButton(onPressed: () async { 
+          if(n.isNotEmpty && pr.isNotEmpty){ 
+            List<String> imgs = []; 
+            if(img1.isNotEmpty) imgs.add(img1); 
+            if(img2.isNotEmpty) imgs.add(img2); 
+            await productsRef.add({
+              "name":n,
+              "price":pr,
+              "images":imgs, 
+              "image": imgs.isNotEmpty ? imgs[0] : "", 
+              "description":desc, 
+              "color":color, 
+              "capabilities":cap,
+              "createdAt": FieldValue.serverTimestamp()
+            }); 
+            Navigator.pop(ctx);
+          } 
+        }, child: const Text("حفظ"))
       ],
     )));
   }
+
   @override Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(title: const Text("متجر الاكسسوارات"), backgroundColor: const Color(0xFF8E24AA), actions: [IconButton(onPressed: (){ if(isAdmin) setState(()=> isAdmin=false); else askAdminPassword(); }, icon: Icon(isAdmin ? Icons.lock_open : Icons.lock, color: Colors.white))]),
       floatingActionButton: isAdmin ? FloatingActionButton(onPressed: addProduct, backgroundColor: const Color(0xFF8E24AA), child: const Icon(Icons.add_a_photo, color: Colors.white)) : null,
-      body: products.isEmpty ? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [const Icon(Icons.store, size: 60, color: Colors.grey), const Text("مفيش منتجات"), if(!isAdmin) ElevatedButton(onPressed: askAdminPassword, child: const Text("دخول الأدمن"))])) : GridView.builder(padding: const EdgeInsets.all(10), gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 0.68, crossAxisSpacing: 10, mainAxisSpacing: 10), itemCount: products.length, itemBuilder: (_, i){
-        final it=products[i];
-        List imgs = it['images'] ?? (it['image']!=null && it['image'].toString().isNotEmpty ? [it['image']] : []);
-        String firstImg = imgs.isNotEmpty ? imgs[0].toString() : "";
-        bool hasImg = firstImg.isNotEmpty && File(firstImg).existsSync();
-        return InkWell(
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProductDetailPage(product: it, onDelete: (){ setState(()=> products.removeAt(i)); save(); }, isAdmin: isAdmin))),
-          child: Card(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            ClipRRect(borderRadius: const BorderRadius.vertical(top: Radius.circular(16)), child: hasImg ? Image.file(File(firstImg), height: 140, width: double.infinity, fit: BoxFit.cover) : Container(height: 140, width: double.infinity, color: const Color(0xFFF3E5F5), child: const Icon(Icons.headset, size: 60, color: Color(0xFF8E24AA)))),
-            Padding(padding: const EdgeInsets.all(8), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(it['name'] ?? "", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
-              Text("${it['price']} جنيه", style: const TextStyle(color: Color(0xFF8E24AA), fontWeight: FontWeight.bold, fontSize: 13)),
-              const SizedBox(height: 6),
-              SizedBox(width: double.infinity, height: 32, child: ElevatedButton(onPressed: () { Navigator.push(context, MaterialPageRoute(builder: (_) => ProductDetailPage(product: it, onDelete: (){ setState(()=> products.removeAt(i)); save(); }, isAdmin: isAdmin))); }, style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2E7D32)), child: const Text("عرض", style: TextStyle(color: Colors.white, fontSize: 11)))),
-            ]))
-          ])),
-        );
-      }),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: productsRef.orderBy('createdAt', descending: true).snapshots(),
+        builder: (context, snapshot) {
+          if(!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          final docs = snapshot.data!.docs;
+          if(docs.isEmpty) {
+            return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [const Icon(Icons.store, size: 60, color: Colors.grey), const Text("مفيش منتجات"), if(!isAdmin) ElevatedButton(onPressed: askAdminPassword, child: const Text("دخول الأدمن"))]));
+          }
+          return GridView.builder(padding: const EdgeInsets.all(10), gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 0.68, crossAxisSpacing: 10, mainAxisSpacing: 10), itemCount: docs.length, itemBuilder: (_, i){
+            final it = docs[i].data() as Map<String, dynamic>;
+            final docId = docs[i].id;
+            List imgs = it['images'] ?? (it['image']!=null && it['image'].toString().isNotEmpty ? [it['image']] : []);
+            String firstImg = imgs.isNotEmpty ? imgs[0].toString() : "";
+            bool hasImg = firstImg.isNotEmpty && File(firstImg).existsSync();
+            return InkWell(
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProductDetailPage(product: it, docId: docId, onDelete: (){ productsRef.doc(docId).delete(); }, isAdmin: isAdmin))),
+              child: Card(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                ClipRRect(borderRadius: const BorderRadius.vertical(top: Radius.circular(16)), child: hasImg ? Image.file(File(firstImg), height: 140, width: double.infinity, fit: BoxFit.cover) : Container(height: 140, width: double.infinity, color: const Color(0xFFF3E5F5), child: const Icon(Icons.headset, size: 60, color: Color(0xFF8E24AA)))),
+                Padding(padding: const EdgeInsets.all(8), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(it['name'] ?? "", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  Text("${it['price']} جنيه", style: const TextStyle(color: Color(0xFF8E24AA), fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 6),
+                  SizedBox(width: double.infinity, height: 32, child: ElevatedButton(onPressed: () { Navigator.push(context, MaterialPageRoute(builder: (_) => ProductDetailPage(product: it, docId: docId, onDelete: (){ productsRef.doc(docId).delete(); }, isAdmin: isAdmin))); }, style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2E7D32)), child: const Text("عرض", style: TextStyle(color: Colors.white, fontSize: 11)))),
+                ]))
+              ])),
+            );
+          });
+        }
+      ),
     );
   }
 }
 
 class ProductDetailPage extends StatefulWidget {
   final Map product;
+  final String docId;
   final VoidCallback onDelete;
   final bool isAdmin;
-  const ProductDetailPage({super.key, required this.product, required this.onDelete, required this.isAdmin});
+  const ProductDetailPage({super.key, required this.product, required this.docId, required this.onDelete, required this.isAdmin});
   @override State<ProductDetailPage> createState() => _ProductDetailPageState();
 }
 
@@ -159,8 +201,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 onPageChanged: (i)=> setState(()=> currentPage=i),
                 itemBuilder: (_, idx){
                   String p = imgs[idx].toString();
-                  bool ok = File(p).existsSync();
-                  return ok ? Image.file(File(p), fit: BoxFit.contain, width: double.infinity) : Container(color: Colors.grey[200], child: const Icon(Icons.broken_image));
+                  bool exists = false;
+                  try { exists = File(p).existsSync(); } catch(e) { exists = false; }
+                  return exists ? Image.file(File(p), fit: BoxFit.contain, width: double.infinity) : Container(color: Colors.grey[200], child: const Icon(Icons.broken_image, size: 50));
                 },
               ),
               if(imgs.length>1)
