@@ -7,10 +7,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Backup important files
-        run: |
-          cp android/app/google-services.json /tmp/google-services.json || echo "no google file"
-          cp -r assets /tmp/assets_backup || cp -r images /tmp/assets_backup || echo "no assets folder"
+      - name: Backup google-services
+        run: cp android/app/google-services.json /tmp/g.json || echo "no file"
       - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
@@ -19,20 +17,15 @@ jobs:
         with:
           flutter-version: '3.22.0'
           channel: 'stable'
-      - name: Fix project structure
+      - name: Fix Android
         run: |
           rm -rf android
           flutter create . --platforms=android --org com.oday --project-name phone
-          cp /tmp/google-services.json android/app/google-services.json
-          # رجع الصور مكانها لو كانت في فولدر
-          mkdir -p assets
-          cp -r /tmp/assets_backup/* assets/ 2>/dev/null || true
-          # لو الصور جنب pubspec انقلها جوه assets
-          cp *.png assets/ 2>/dev/null || true
-          cp *.jpg assets/ 2>/dev/null || true
+          cp /tmp/g.json android/app/google-services.json
       - run: flutter pub get
-      - run: flutter build apk --release --no-tree-shake-icons
+      - run: flutter pub run flutter_launcher_icons
+      - run: flutter build apk --release
       - uses: actions/upload-artifact@v4
         with:
-          name: oday-phone-apk-fixed
+          name: oday-phone-final-fixed
           path: build/app/outputs/flutter-apk/app-release.apk
