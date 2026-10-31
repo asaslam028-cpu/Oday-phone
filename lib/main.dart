@@ -1,13 +1,16 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    print("Firebase error: $e");
+  }
   runApp(const OdayApp());
 }
 
