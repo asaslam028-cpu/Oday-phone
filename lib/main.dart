@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
+import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
 import 'firebase_options.dart';
 
@@ -16,22 +17,34 @@ class MyApp extends StatelessWidget { const MyApp({super.key}); @override Widget
 class HomePage extends StatefulWidget { const HomePage({super.key}); @override State<HomePage> createState() => _HomePageState(); }
 class _HomePageState extends State<HomePage> {
   final ImagePicker _picker = ImagePicker();
-  bool isAdmin = false; // للتحكم في البانر
+  bool isAdmin = false;
+  final PageController _pageController = PageController(viewportFraction: 0.92);
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 3), (t){
+      if(_pageController.hasClients){
+        int next = _pageController.page!.round() + 1;
+        _pageController.animateToPage(next, duration: const Duration(milliseconds: 400), curve: Curves.easeIn);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _pageController.dispose();
+    super.dispose();
+  }
 
   Future<void> checkAdmin() async {
     final c = TextEditingController();
     showDialog(context: context, builder: (ctx) => AlertDialog(
       title: const Text('كلمة سر الادمن'),
-      content: TextField(controller: c, obscureText: true, decoration: const InputDecoration(hintText: 'اكتب الباسورد')),
-      actions: [
-        ElevatedButton(onPressed: (){
-          if(c.text=='Oday123'){
-            setState(()=>isAdmin=true);
-            Navigator.pop(ctx);
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('انت دلوقتي ادمن ✅ دوس على البانر عشان تغيره')));
-          }
-        }, child: const Text('دخول'))
-      ],
+      content: TextField(controller: c, obscureText: true),
+      actions: [ElevatedButton(onPressed: (){ if(c.text=='Oday123'){ setState(()=>isAdmin=true); Navigator.pop(ctx); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('انت ادمن ✅')));} }, child: const Text('دخول'))],
     ));
   }
 
@@ -41,6 +54,7 @@ class _HomePageState extends State<HomePage> {
     await FirebaseFirestore.instance.collection('settings').doc('banners').set({name: base64Encode(bytes)}, SetOptions(merge: true));
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم رفع البانر ✅')));
   }
+
   Future<void> showOrderDialog(String type) async {
     final n=TextEditingController(), p=TextEditingController(), a=TextEditingController(), d=TextEditingController();
     showDialog(context: context, builder: (ctx) => AlertDialog(
@@ -58,30 +72,63 @@ class _HomePageState extends State<HomePage> {
         }, child: const Text('ارسال'))],
     ));
   }
+
   Widget bannerWidget(String name, double h, String label) {
     return StreamBuilder<DocumentSnapshot>(stream: FirebaseFirestore.instance.collection('settings').doc('banners').snapshots(),
       builder: (context, snap) {
         String? b64; if(snap.hasData && snap.data!.data()!=null) b64 = (snap.data!.data() as Map<String,dynamic>)[name];
         return GestureDetector(
-          onTap: (){
-            if(isAdmin) uploadBanner(name);
-          },
-          onLongPress: (){
-            if(!isAdmin) checkAdmin();
-          },
+          onTap: (){ if(isAdmin) uploadBanner(name); },
+          onLongPress: (){ if(!isAdmin) checkAdmin(); },
           child: Container(height: h, width: double.infinity, margin: const EdgeInsets.all(8),
             decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.blue)),
-            child: b64!=null ? ClipRRect(
-              borderRadius: BorderRadius.circular(12), 
-              child: Container(
-                color: Colors.white,
-                child: Image.memory(base64Decode(b64), fit: BoxFit.contain, width: double.infinity)
-              )
-            ) : Center(child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold))),
+            child: b64!=null ? ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.memory(base64Decode(b64), fit: BoxFit.fill, width: double.infinity, height: h)) : Center(child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold))),
           ),
         );
       });
   }
+
+  Widget bannerCarousel() {
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('settings').doc('banners').snapshots(),
+      builder: (context, snap) {
+        List<Map<String,String>> banners = [];
+        if(snap.hasData && snap.data!.data()!=null){
+          var data = snap.data!.data() as Map<String,dynamic>;
+          if(data['topImage'] != null) banners.add({'name':'topImage','data':data['topImage']});
+          if(data['bottomImage'] != null) banners.add({'name':'bottomImage','data':data['bottomImage']});
+          if(data['extra1'] != null) banners.add({'name':'extra1','data':data['extra1']});
+          if(data['extra2'] != null) banners.add({'name':'extra2','data':data['extra2']});
+        }
+        if(banners.isEmpty){
+          return bannerWidget('topImage', 180, 'دوسة طويلة للادمن - دوس هنا لرفع البانر');
+        }
+        return SizedBox(
+          height: 185,
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: banners.length == 1 ? 1 : 1000,
+            itemBuilder: (ctx, index){
+              int realIndex = index % banners.length;
+              return GestureDetector(
+                onTap: (){ if(isAdmin) uploadBanner(banners[realIndex]['name']!); },
+                onLongPress: (){ if(!isAdmin) checkAdmin(); },
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 6),
+                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.blue.withOpacity(0.5))),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.memory(base64Decode(banners[realIndex]['data']!), fit: BoxFit.fill, width: double.infinity, height: 185),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      }
+    );
+  }
+
   @override Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Oday Phone'), backgroundColor: Colors.blue, foregroundColor: Colors.white,
@@ -93,7 +140,7 @@ class _HomePageState extends State<HomePage> {
         })],
       ),
       body: SingleChildScrollView(child: Column(children: [
-        bannerWidget('topImage', 180, 'دوس هنا لرفع البانر العلوي'),
+        bannerCarousel(),
         Padding(padding: const EdgeInsets.all(8), child: Row(children: [
           Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, minimumSize: const Size(0,60)), onPressed: ()=>Navigator.push(context, MaterialPageRoute(builder: (_)=>const StorePage())), child: const Text('متجر الإكسسوارات', style: TextStyle(color: Colors.white)))),
           const SizedBox(width: 8),
@@ -108,7 +155,7 @@ class _HomePageState extends State<HomePage> {
           Expanded(child: Padding(padding: const EdgeInsets.all(8), child: ElevatedButton(onPressed: ()=>showOrderDialog('طلب مندوب'), child: const Text('اطلب مندوب')))),
           Expanded(child: Padding(padding: const EdgeInsets.all(8), child: ElevatedButton(onPressed: ()=>showOrderDialog('صيانة من المنزل'), child: const Text('صيانة من المنزل')))),
         ]),
-        bannerWidget('bottomImage', 190, 'دوس هنا لرفع البانر السفلي'),
+        bannerWidget('bottomImage', 180, 'دوسة طويلة للادمن - البانر السفلي'),
         Padding(padding: const EdgeInsets.all(8), child: SizedBox(width: double.infinity, height: 55, child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Colors.black87), icon: const Icon(Icons.headset_mic, color: Colors.white), label: const Text('تواصل معنا بسرعة', style: TextStyle(color: Colors.white, fontSize: 18)), onPressed: ()=>Navigator.push(context, MaterialPageRoute(builder: (_)=>const ContactPage()))))),
         Container(width: double.infinity, color: Colors.black87, padding: const EdgeInsets.all(12), child: const Text('الإسماعيلية - Oday Phone - 01069068091', textAlign: TextAlign.center, style: TextStyle(color: Colors.white))),
       ])),
@@ -116,7 +163,6 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-// صفحة الطلبات للادمن
 class OrdersPage extends StatelessWidget { const OrdersPage({super.key});
   @override Widget build(BuildContext context) {
     return Scaffold(appBar: AppBar(title: const Text('كل الطلبات')),
@@ -134,7 +180,6 @@ class OrdersPage extends StatelessWidget { const OrdersPage({super.key});
   }
 }
 
-// 1- صفحة العروض
 class OffersPage extends StatefulWidget { const OffersPage({super.key}); @override State<OffersPage> createState() => _OffersPageState(); }
 class _OffersPageState extends State<OffersPage> { bool isAdmin=false; Future<void> checkAdmin() async { final c=TextEditingController(); showDialog(context: context, builder: (ctx)=>AlertDialog(title: const Text('ادمن'), content: TextField(controller: c, obscureText: true), actions: [ElevatedButton(onPressed: (){ if(c.text=='Oday123'){ setState(()=>isAdmin=true); Navigator.pop(ctx);} }, child: const Text('دخول'))])); }
   Future<void> addOffer() async { final t=TextEditingController(), pr=TextEditingController(); String? img; final picker=ImagePicker();
@@ -149,7 +194,6 @@ class _OffersPageState extends State<OffersPage> { bool isAdmin=false; Future<vo
     })); }
 }
 
-// 2- موبايلات مستعملة
 class UsedPhonesPage extends StatefulWidget { const UsedPhonesPage({super.key}); @override State<UsedPhonesPage> createState() => _UsedPhonesPageState(); }
 class _UsedPhonesPageState extends State<UsedPhonesPage> { bool isAdmin=false; Future<void> checkAdmin() async { final c=TextEditingController(); showDialog(context: context, builder: (ctx)=>AlertDialog(title: const Text('ادمن'), content: TextField(controller: c, obscureText: true), actions: [ElevatedButton(onPressed: (){ if(c.text=='Oday123'){ setState(()=>isAdmin=true); Navigator.pop(ctx);} }, child: const Text('دخول'))])); }
   Future<void> addUsed() async { final n=TextEditingController(), pr=TextEditingController(), cond=TextEditingController(); String? img; final picker=ImagePicker();
@@ -164,11 +208,9 @@ class _UsedPhonesPageState extends State<UsedPhonesPage> { bool isAdmin=false; F
     })); }
 }
 
-// 3- تتبع الطلب
 class TrackOrderPage extends StatefulWidget { const TrackOrderPage({super.key}); @override State<TrackOrderPage> createState() => _TrackOrderPageState(); }
 class _TrackOrderPageState extends State<TrackOrderPage> { final phoneCtrl=TextEditingController(); String searchPhone=''; @override Widget build(BuildContext context){ return Scaffold(appBar: AppBar(title: const Text('تتبع طلبي')), body: Column(children: [Padding(padding: const EdgeInsets.all(12), child: Row(children: [Expanded(child: TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: 'اكتب رقم تليفونك'), keyboardType: TextInputType.phone)), IconButton(icon: const Icon(Icons.search), onPressed: ()=>setState(()=>searchPhone=phoneCtrl.text))])), if(searchPhone.isNotEmpty) Expanded(child: StreamBuilder<QuerySnapshot>(stream: FirebaseFirestore.instance.collection('orders').where('phone', isEqualTo: searchPhone).orderBy('time', descending: true).snapshots(), builder: (context, snap){ if(!snap.hasData) return const Center(child: CircularProgressIndicator()); if(snap.data!.docs.isEmpty) return const Center(child: Text('مفيش طلبات بالرقم ده')); return ListView(children: snap.data!.docs.map((d){ final data=d.data() as Map<String,dynamic>; Color c=Colors.orange; if(data['status']=='جاري التوصيل') c=Colors.blue; if(data['status']=='تم التوصيل') c=Colors.green; if(data['status']=='تم الالغاء') c=Colors.red; return Card(margin: const EdgeInsets.all(8), child: ListTile(title: Text(data['type']??''), subtitle: Text('الحالة: ${data['status']}'), trailing: CircleAvatar(backgroundColor: c, child: const Icon(Icons.local_shipping, color: Colors.white)))); }).toList()); })) ])); } }
 
-// 4- تواصل سريع - برقمك الجديد
 class ContactPage extends StatelessWidget { const ContactPage({super.key});
   Future<void> openWhatsApp() async { final uri=Uri.parse('https://wa.me/201069068091'); if(await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication); }
   Future<void> callPhone() async { final uri=Uri.parse('tel:+201069068091'); if(await canLaunchUrl(uri)) await launchUrl(uri); }
@@ -183,7 +225,6 @@ class ContactPage extends StatelessWidget { const ContactPage({super.key});
   ]))); }
 }
 
-// متجر الاكسسوارات
 class StorePage extends StatefulWidget { const StorePage({super.key}); @override State<StorePage> createState() => _StorePageState(); }
 class _StorePageState extends State<StorePage> { bool isAdmin=false; Future<void> checkAdmin() async { final c=TextEditingController(); showDialog(context: context, builder: (ctx)=>AlertDialog(title: const Text('ادمن'), content: TextField(controller: c, obscureText: true), actions: [ElevatedButton(onPressed: (){ if(c.text=='Oday123'){ setState(()=>isAdmin=true); Navigator.pop(ctx);} }, child: const Text('دخول'))])); }
   Future<void> addProduct() async { final n=TextEditingController(), pr=TextEditingController(), d=TextEditingController(); String? img; final picker=ImagePicker();
