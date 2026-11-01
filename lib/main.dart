@@ -43,8 +43,7 @@ class _HomePageState extends State<HomePage> {
       actions: [
         TextButton(onPressed: ()=> Navigator.pop(context), child: const Text('إلغاء')),
         ElevatedButton(onPressed: (){
-          if(c.text.trim()=='oday123'){ setState(()=> isAdmin=true); Navigator.pop(context); 
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم تفعيل وضع الأدمن - تقدر تغير الصور'))); }
+          if(c.text.trim()=='oday123'){ setState(()=> isAdmin=true); Navigator.pop(context); }
         }, child: const Text('دخول'))
       ],
     ));
@@ -55,6 +54,7 @@ class _HomePageState extends State<HomePage> {
     if(img==null) return;
     final bytes = await img.readAsBytes();
     await settingsRef.set({type: base64Encode(bytes)}, SetOptions(merge: true));
+    if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تم تحديث $type للكل')));
   }
 
   void showMandoobDialog(String title) {
@@ -90,28 +90,20 @@ class _HomePageState extends State<HomePage> {
           return SingleChildScrollView(
             child: Column(
               children: [
-                // بانر فوق
-                Container(
-                  height: 180,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.blue,
-                    image: topBytes!=null ? DecorationImage(image: MemoryImage(topBytes), fit: BoxFit.cover) : null,
+                // 1- البانر فوق - صورتك WA9506
+                Stack(children: [
+                  Container(
+                    height: 220, width: double.infinity,
+                    child: topBytes!=null 
+                      ? Image.memory(topBytes, fit: BoxFit.cover) 
+                      : Image.asset('IMG-20261031-WA9506.jpg', fit: BoxFit.cover),
                   ),
-                  child: Stack(children: [
-                    Container(color: Colors.black38),
-                    Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: const [
-                      Icon(Icons.phone_android, size: 50, color: Colors.white),
-                      Text('Oday Phone', style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
-                      Text('الإسماعيلية', style: TextStyle(color: Colors.white70)),
-                    ])),
-                    if(isAdmin) Positioned(right: 5, top: 5, child: ElevatedButton(onPressed: ()=> changeBanner('topImage'), child: const Text('غير صورة فوق'))),
-                  ]),
-                ),
+                  if(isAdmin) Positioned(right: 8, top: 8, child: ElevatedButton(onPressed: ()=> changeBanner('topImage'), child: const Text('غير صورة فوق'))),
+                ]),
 
                 const SizedBox(height: 12),
 
-                // *** اهم زرار - متجر الاكسسوار ***
+                // اهم زرار
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: SizedBox(
@@ -127,33 +119,29 @@ class _HomePageState extends State<HomePage> {
 
                 const SizedBox(height: 12),
 
-                // زرارين المندوب والصيانة
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Row(children: [
                     Expanded(child: InkWell(onTap: ()=> showMandoobDialog('طلب مندوب'), child: Card(elevation: 3, child: Padding(padding: const EdgeInsets.all(15), child: Column(children: const [Icon(Icons.delivery_dining, size: 35, color: Colors.orange), SizedBox(height: 5), Text('اطلب مندوب', style: TextStyle(fontWeight: FontWeight.bold))]))))),
                     const SizedBox(width: 10),
-                    Expanded(child: InkWell(onTap: ()=> showMandoobDialog('صيانة موبايلك من المنزل - ناخد الجهاز نصلحه ونرجعه'), child: Card(elevation: 3, child: Padding(padding: const EdgeInsets.all(15), child: Column(children: const [Icon(Icons.build, size: 35, color: Colors.green), SizedBox(height: 5), Text('صيانة من المنزل', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold))]))))),
+                    Expanded(child: InkWell(onTap: ()=> showMandoobDialog('صيانة موبايلك من المنزل'), child: Card(elevation: 3, child: Padding(padding: const EdgeInsets.all(15), child: Column(children: const [Icon(Icons.build, size: 35, color: Colors.green), SizedBox(height: 5), Text('صيانة من المنزل', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold))]))))),
                   ]),
                 ),
 
                 const SizedBox(height: 12),
 
-                // صورة تحت تملى الفراغ الابيض
-                Container(
-                  height: 250,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.black87,
-                    image: bottomBytes!=null ? DecorationImage(image: MemoryImage(bottomBytes), fit: BoxFit.cover) : null,
+                // 2- الصورة تحت - صورتك WA4508 بتملى الفراغ الابيض
+                Stack(children: [
+                  Container(
+                    height: 300, width: double.infinity,
+                    child: bottomBytes!=null 
+                      ? Image.memory(bottomBytes, fit: BoxFit.cover) 
+                      : Image.asset('IMG-20261031-WA4508.jpg', fit: BoxFit.cover),
                   ),
-                  child: Stack(children: [
-                    if(bottomBytes!=null) Container(color: Colors.black45),
-                    Center(child: Text(bottomBytes==null ? 'اكسسوارات - صيانة - بيع وشراء\nجميع خدمات المحمول' : 'Oday Phone - الإسماعيلية', textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))),
-                    if(isAdmin) Positioned(right: 5, top: 5, child: ElevatedButton(onPressed: ()=> changeBanner('bottomImage'), child: const Text('غير صورة تحت'))),
-                  ]),
-                ),
-                Container(width: double.infinity, color: Colors.black, padding: const EdgeInsets.all(12), child: const Text('📍 الإسماعيلية - توصيل لحد البيت | كل خدمات المحمول', textAlign: TextAlign.center, style: TextStyle(color: Colors.white))),
+                  if(isAdmin) Positioned(right: 8, top: 8, child: ElevatedButton(onPressed: ()=> changeBanner('bottomImage'), child: const Text('غير صورة تحت'))),
+                ]),
+
+                Container(width: double.infinity, color: Colors.black, padding: const EdgeInsets.all(12), child: const Text('📍 الإسماعيلية - توصيل لحد البيت | كل خدمات المحمول - Oday Phone', textAlign: TextAlign.center, style: TextStyle(color: Colors.white))),
               ],
             ),
           );
@@ -189,7 +177,7 @@ class _StorePageState extends State<StorePage> {
                 if(img!=null){ final b = await img.readAsBytes(); setD((){ imageBytes=b; base64Image=base64Encode(b); }); }
               },
               child: Container(height: 140, width: double.infinity, decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.blue)),
-                child: imageBytes!=null ? ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.memory(imageBytes!, fit: BoxFit.cover, width: double.infinity)) : const Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.add_a_photo, size: 40), Text('دوس لاختيار صورة')])),
+                child: imageBytes!=null ? ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.memory(imageBytes!, fit: BoxFit.cover, width: double.infinity)) : const Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.add_a_photo, size: 40), Text('دوس لاختيار صورة المنتج')])),
             ),
             const SizedBox(height: 10),
             TextField(controller: nameC, decoration: const InputDecoration(labelText: 'اسم المنتج', border: OutlineInputBorder())),
@@ -212,7 +200,7 @@ class _StorePageState extends State<StorePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('متجر الإكسسوارات - بالصور'), actions: [IconButton(icon: const Icon(Icons.add), onPressed: addProduct)]),
+      appBar: AppBar(title: const Text('متجر الإكسسوارات'), actions: [IconButton(icon: const Icon(Icons.add), onPressed: addProduct)]),
       body: StreamBuilder<QuerySnapshot>(
         stream: productsRef.orderBy('createdAt', descending: true).snapshots(),
         builder: (context, snap) {
@@ -232,7 +220,6 @@ class _StorePageState extends State<StorePage> {
                 Expanded(child: ClipRRect(borderRadius: const BorderRadius.vertical(top: Radius.circular(12)), child: imgBytes!=null ? Image.memory(imgBytes, fit: BoxFit.cover, width: double.infinity) : Container(color: Colors.grey[200], child: const Icon(Icons.image, size: 50)))),
                 Padding(padding: const EdgeInsets.all(8), child: Column(children: [
                   Text(data['name']??'', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 3),
                   Text('${data['price']??''} جنيه', style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
                 ])),
               ]));
