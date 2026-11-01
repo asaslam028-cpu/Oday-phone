@@ -31,20 +31,28 @@ class _HomePageState extends State<HomePage> {
       }
     });
   }
+  @override void dispose() { _timer?.cancel(); _pageController.dispose(); super.dispose(); }
 
-  @override
-  void dispose() {
-    _timer?.cancel();
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  Future<void> checkAdmin() async {
+  Future<void> checkAdminBanner() async {
     final c = TextEditingController();
     showDialog(context: context, builder: (ctx) => AlertDialog(
-      title: const Text('كلمة سر الادمن'),
-      content: TextField(controller: c, obscureText: true),
+      title: const Text('كلمة سر الادمن'), content: TextField(controller: c, obscureText: true),
       actions: [ElevatedButton(onPressed: (){ if(c.text=='Oday123'){ setState(()=>isAdmin=true); Navigator.pop(ctx); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('انت ادمن ✅')));} }, child: const Text('دخول'))],
+    ));
+  }
+
+  Future<void> checkAdminOrders() async {
+    final c = TextEditingController();
+    showDialog(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('دخول الادمن فقط'), content: TextField(controller: c, obscureText: true, decoration: const InputDecoration(hintText: 'الباسورد')),
+      actions: [ElevatedButton(onPressed: (){
+        if(c.text=='Oday123'){
+          Navigator.pop(ctx);
+          Navigator.push(context, MaterialPageRoute(builder: (_)=>const OrdersPage()));
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('باسورد غلط')));
+        }
+      }, child: const Text('دخول'))],
     ));
   }
 
@@ -79,7 +87,7 @@ class _HomePageState extends State<HomePage> {
         String? b64; if(snap.hasData && snap.data!.data()!=null) b64 = (snap.data!.data() as Map<String,dynamic>)[name];
         return GestureDetector(
           onTap: (){ if(isAdmin) uploadBanner(name); },
-          onLongPress: (){ if(!isAdmin) checkAdmin(); },
+          onLongPress: (){ if(!isAdmin) checkAdminBanner(); },
           child: Container(height: h, width: double.infinity, margin: const EdgeInsets.all(8),
             decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.blue)),
             child: b64!=null ? ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.memory(base64Decode(b64), fit: BoxFit.fill, width: double.infinity, height: h)) : Center(child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold))),
@@ -97,8 +105,6 @@ class _HomePageState extends State<HomePage> {
           var data = snap.data!.data() as Map<String,dynamic>;
           if(data['topImage'] != null) banners.add({'name':'topImage','data':data['topImage']});
           if(data['bottomImage'] != null) banners.add({'name':'bottomImage','data':data['bottomImage']});
-          if(data['extra1'] != null) banners.add({'name':'extra1','data':data['extra1']});
-          if(data['extra2'] != null) banners.add({'name':'extra2','data':data['extra2']});
         }
         if(banners.isEmpty){
           return bannerWidget('topImage', 180, 'دوسة طويلة للادمن - دوس هنا لرفع البانر');
@@ -112,7 +118,7 @@ class _HomePageState extends State<HomePage> {
               int realIndex = index % banners.length;
               return GestureDetector(
                 onTap: (){ if(isAdmin) uploadBanner(banners[realIndex]['name']!); },
-                onLongPress: (){ if(!isAdmin) checkAdmin(); },
+                onLongPress: (){ if(!isAdmin) checkAdminBanner(); },
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 6),
                   decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.blue.withOpacity(0.5))),
@@ -132,12 +138,7 @@ class _HomePageState extends State<HomePage> {
   @override Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Oday Phone'), backgroundColor: Colors.blue, foregroundColor: Colors.white,
-        actions: [StreamBuilder<QuerySnapshot>(stream: FirebaseFirestore.instance.collection('orders').snapshots(), builder: (context, snapshot) {
-          int count = snapshot.hasData ? snapshot.data!.docs.length : 0;
-          return Stack(children: [ IconButton(icon: const Icon(Icons.notifications), onPressed: ()=>Navigator.push(context, MaterialPageRoute(builder: (_)=>const OrdersPage()))),
-            if(count>0) Positioned(right: 8, top: 8, child: CircleAvatar(radius: 9, backgroundColor: Colors.red, child: Text('$count', style: const TextStyle(fontSize: 10, color: Colors.white)))),
-          ]);
-        })],
+        actions: [IconButton(icon: const Icon(Icons.notifications), onPressed: checkAdminOrders)],
       ),
       body: SingleChildScrollView(child: Column(children: [
         bannerCarousel(),
@@ -199,7 +200,7 @@ class _UsedPhonesPageState extends State<UsedPhonesPage> { bool isAdmin=false; F
   Future<void> addUsed() async { final n=TextEditingController(), pr=TextEditingController(), cond=TextEditingController(); String? img; final picker=ImagePicker();
     showDialog(context: context, builder: (ctx)=>StatefulBuilder(builder: (ctx2, setSt)=>AlertDialog(title: const Text('موبايل مستعمل'), content: Column(mainAxisSize: MainAxisSize.min, children: [
       GestureDetector(onTap: () async { final x=await picker.pickImage(source: ImageSource.gallery, imageQuality: 50); if(x!=null){ final b=await x.readAsBytes(); setSt(()=>img=base64Encode(b)); } }, child: Container(height: 120, color: Colors.grey[300], child: img!=null?Image.memory(base64Decode(img!)):const Icon(Icons.add_a_photo))),
-      TextField(controller: n, decoration: const InputDecoration(labelText: 'نوع الموبايل - مثلا iPhone 12')), TextField(controller: pr, decoration: const InputDecoration(labelText: 'السعر')), TextField(controller: cond, decoration: const InputDecoration(labelText: 'الحالة - مثلا كسر زيرو بالعلبة')),
+      TextField(controller: n, decoration: const InputDecoration(labelText: 'نوع الموبايل')), TextField(controller: pr, decoration: const InputDecoration(labelText: 'السعر')), TextField(controller: cond, decoration: const InputDecoration(labelText: 'الحالة')),
     ]), actions: [ElevatedButton(onPressed: () async { await FirebaseFirestore.instance.collection('used_phones').add({'name':n.text,'price':pr.text,'condition':cond.text,'image':img,'time':DateTime.now()}); Navigator.pop(ctx); }, child: const Text('حفظ'))])));
   }
   @override Widget build(BuildContext context) { return Scaffold(appBar: AppBar(title: const Text('موبايلات مستعملة'), actions: [if(!isAdmin) IconButton(icon: const Icon(Icons.lock), onPressed: checkAdmin), if(isAdmin) IconButton(icon: const Icon(Icons.add), onPressed: addUsed)]),
