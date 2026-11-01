@@ -16,6 +16,25 @@ class MyApp extends StatelessWidget { const MyApp({super.key}); @override Widget
 class HomePage extends StatefulWidget { const HomePage({super.key}); @override State<HomePage> createState() => _HomePageState(); }
 class _HomePageState extends State<HomePage> {
   final ImagePicker _picker = ImagePicker();
+  bool isAdmin = false; // للتحكم في البانر
+
+  Future<void> checkAdmin() async {
+    final c = TextEditingController();
+    showDialog(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('كلمة سر الادمن'),
+      content: TextField(controller: c, obscureText: true, decoration: const InputDecoration(hintText: 'اكتب الباسورد')),
+      actions: [
+        ElevatedButton(onPressed: (){
+          if(c.text=='Oday123'){
+            setState(()=>isAdmin=true);
+            Navigator.pop(ctx);
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('انت دلوقتي ادمن ✅ دوس على البانر عشان تغيره')));
+          }
+        }, child: const Text('دخول'))
+      ],
+    ));
+  }
+
   Future<void> uploadBanner(String name) async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 50);
     if(image == null) return; final bytes = await image.readAsBytes();
@@ -43,10 +62,22 @@ class _HomePageState extends State<HomePage> {
     return StreamBuilder<DocumentSnapshot>(stream: FirebaseFirestore.instance.collection('settings').doc('banners').snapshots(),
       builder: (context, snap) {
         String? b64; if(snap.hasData && snap.data!.data()!=null) b64 = (snap.data!.data() as Map<String,dynamic>)[name];
-        return GestureDetector(onTap: ()=>uploadBanner(name),
+        return GestureDetector(
+          onTap: (){
+            if(isAdmin) uploadBanner(name);
+          },
+          onLongPress: (){
+            if(!isAdmin) checkAdmin();
+          },
           child: Container(height: h, width: double.infinity, margin: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: Colors.blueGrey[100], borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.blue)),
-            child: b64!=null ? ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.memory(base64Decode(b64), fit: BoxFit.cover)) : Center(child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold))),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.blue)),
+            child: b64!=null ? ClipRRect(
+              borderRadius: BorderRadius.circular(12), 
+              child: Container(
+                color: Colors.white,
+                child: Image.memory(base64Decode(b64), fit: BoxFit.contain, width: double.infinity)
+              )
+            ) : Center(child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold))),
           ),
         );
       });
@@ -77,7 +108,7 @@ class _HomePageState extends State<HomePage> {
           Expanded(child: Padding(padding: const EdgeInsets.all(8), child: ElevatedButton(onPressed: ()=>showOrderDialog('طلب مندوب'), child: const Text('اطلب مندوب')))),
           Expanded(child: Padding(padding: const EdgeInsets.all(8), child: ElevatedButton(onPressed: ()=>showOrderDialog('صيانة من المنزل'), child: const Text('صيانة من المنزل')))),
         ]),
-        bannerWidget('bottomImage', 250, 'دوس هنا لرفع البانر السفلي'),
+        bannerWidget('bottomImage', 190, 'دوس هنا لرفع البانر السفلي'),
         Padding(padding: const EdgeInsets.all(8), child: SizedBox(width: double.infinity, height: 55, child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Colors.black87), icon: const Icon(Icons.headset_mic, color: Colors.white), label: const Text('تواصل معنا بسرعة', style: TextStyle(color: Colors.white, fontSize: 18)), onPressed: ()=>Navigator.push(context, MaterialPageRoute(builder: (_)=>const ContactPage()))))),
         Container(width: double.infinity, color: Colors.black87, padding: const EdgeInsets.all(12), child: const Text('الإسماعيلية - Oday Phone - 01069068091', textAlign: TextAlign.center, style: TextStyle(color: Colors.white))),
       ])),
