@@ -34,6 +34,7 @@ class _HomePageState extends State<HomePage> {
   bool isAdmin = false;
   final ImagePicker _picker = ImagePicker();
   final settingsRef = FirebaseFirestore.instance.collection('settings').doc('banners');
+  final ordersRef = FirebaseFirestore.instance.collection('orders');
 
   void checkAdmin() {
     final c = TextEditingController();
@@ -54,7 +55,7 @@ class _HomePageState extends State<HomePage> {
     if(img==null) return;
     final bytes = await img.readAsBytes();
     await settingsRef.set({type: base64Encode(bytes)}, SetOptions(merge: true));
-    if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تم تحديث $type للكل')));
+    if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تم تحديث $type')));
   }
 
   void showMandoobDialog(String title) {
@@ -63,14 +64,15 @@ class _HomePageState extends State<HomePage> {
     showDialog(context: context, builder: (_) => AlertDialog(
       title: Text(title),
       content: Column(mainAxisSize: MainAxisSize.min, children: [
-        TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: 'رقمك', border: OutlineInputBorder())),
+        TextField(controller: phoneCtrl, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'رقمك', border: OutlineInputBorder())),
         const SizedBox(height: 10),
         TextField(controller: addressCtrl, decoration: const InputDecoration(labelText: 'العنوان - الإسماعيلية', border: OutlineInputBorder())),
       ]),
-      actions: [ElevatedButton(onPressed: (){
-          FirebaseFirestore.instance.collection('orders').add({'type': title, 'phone': phoneCtrl.text, 'address': addressCtrl.text, 'time': FieldValue.serverTimestamp()});
+      actions: [ElevatedButton(onPressed: () async {
+          if(phoneCtrl.text.isEmpty) return;
+          await ordersRef.add({'type': title, 'phone': phoneCtrl.text, 'address': addressCtrl.text, 'time': FieldValue.serverTimestamp(), 'seen': false});
           Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم الارسال - المندوب هيكلمك')));
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ تم الارسال - هنكلمك حالاً')));
         }, child: const Text('اطلب الان'))],
     ));
   }
@@ -78,7 +80,34 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Oday Phone'), actions: [IconButton(icon: Icon(isAdmin?Icons.lock_open:Icons.lock), onPressed: checkAdmin)]),
+      appBar: AppBar(
+        title: const Text('Oday Phone'),
+        actions: [
+          // جرس الطلبات - يظهر للكل بس الأدمن هو اللي يقدر يدخل
+          StreamBuilder<QuerySnapshot>(
+            stream: ordersRef.orderBy('time', descending: true).snapshots(),
+            builder: (context, snap) {
+              final count = snap.data?.docs.length ?? 0;
+              return Stack(
+                children: [
+                  IconButton(icon: const Icon(Icons.notifications), onPressed: (){
+                    Navigator.push(context, MaterialPageRoute(builder: (_)=> const OrdersPage()));
+                  }),
+                  if(count>0) Positioned(
+                    right: 5, top: 5,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                      child: Text('$count', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                    ),
+                  )
+                ],
+              );
+            },
+          ),
+          IconButton(icon: Icon(isAdmin?Icons.lock_open:Icons.lock), onPressed: checkAdmin)
+        ],
+      ),
       body: StreamBuilder<DocumentSnapshot>(
         stream: settingsRef.snapshots(),
         builder: (context, snap) {
@@ -90,20 +119,11 @@ class _HomePageState extends State<HomePage> {
           return SingleChildScrollView(
             child: Column(
               children: [
-                // 1- البانر فوق - صورتك WA9506
                 Stack(children: [
-                  Container(
-                    height: 220, width: double.infinity,
-                    child: topBytes!=null 
-                      ? Image.memory(topBytes, fit: BoxFit.cover) 
-                      : Image.asset('IMG-20261031-WA9506.jpg', fit: BoxFit.cover),
-                  ),
+                  Container(height: 220, width: double.infinity, child: topBytes!=null ? Image.memory(topBytes, fit: BoxFit.cover) : Image.asset('IMG-20261031-WA9506.jpg', fit: BoxFit.cover)),
                   if(isAdmin) Positioned(right: 8, top: 8, child: ElevatedButton(onPressed: ()=> changeBanner('topImage'), child: const Text('غير صورة فوق'))),
                 ]),
-
                 const SizedBox(height: 12),
-
-                // اهم زرار
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: SizedBox(
@@ -116,34 +136,65 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 12),
-
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Row(children: [
                     Expanded(child: InkWell(onTap: ()=> showMandoobDialog('طلب مندوب'), child: Card(elevation: 3, child: Padding(padding: const EdgeInsets.all(15), child: Column(children: const [Icon(Icons.delivery_dining, size: 35, color: Colors.orange), SizedBox(height: 5), Text('اطلب مندوب', style: TextStyle(fontWeight: FontWeight.bold))]))))),
                     const SizedBox(width: 10),
-                    Expanded(child: InkWell(onTap: ()=> showMandoobDialog('صيانة موبايلك من المنزل'), child: Card(elevation: 3, child: Padding(padding: const EdgeInsets.all(15), child: Column(children: const [Icon(Icons.build, size: 35, color: Colors.green), SizedBox(height: 5), Text('صيانة من المنزل', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold))]))))),
+                    Expanded(child: InkWell(onTap: ()=> showMandoobDialog('صيانة من المنزل'), child: Card(elevation: 3, child: Padding(padding: const EdgeInsets.all(15), child: Column(children: const [Icon(Icons.build, size: 35, color: Colors.green), SizedBox(height: 5), Text('صيانة من المنزل', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold))]))))),
                   ]),
                 ),
-
                 const SizedBox(height: 12),
-
-                // 2- الصورة تحت - صورتك WA4508 بتملى الفراغ الابيض
                 Stack(children: [
-                  Container(
-                    height: 300, width: double.infinity,
-                    child: bottomBytes!=null 
-                      ? Image.memory(bottomBytes, fit: BoxFit.cover) 
-                      : Image.asset('IMG-20261031-WA4508.jpg', fit: BoxFit.cover),
-                  ),
+                  Container(height: 300, width: double.infinity, child: bottomBytes!=null ? Image.memory(bottomBytes, fit: BoxFit.cover) : Image.asset('IMG-20261031-WA4508.jpg', fit: BoxFit.cover)),
                   if(isAdmin) Positioned(right: 8, top: 8, child: ElevatedButton(onPressed: ()=> changeBanner('bottomImage'), child: const Text('غير صورة تحت'))),
                 ]),
-
                 Container(width: double.infinity, color: Colors.black, padding: const EdgeInsets.all(12), child: const Text('📍 الإسماعيلية - توصيل لحد البيت | كل خدمات المحمول - Oday Phone', textAlign: TextAlign.center, style: TextStyle(color: Colors.white))),
               ],
             ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// صفحة الطلبات الجديدة
+class OrdersPage extends StatelessWidget {
+  const OrdersPage({super.key});
+  @override
+  Widget build(BuildContext context) {
+    final ordersRef = FirebaseFirestore.instance.collection('orders');
+    return Scaffold(
+      appBar: AppBar(title: const Text('🔔 طلبات العملاء - Live')),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: ordersRef.orderBy('time', descending: true).snapshots(),
+        builder: (context, snap) {
+          if(!snap.hasData) return const Center(child: CircularProgressIndicator());
+          final docs = snap.data!.docs;
+          if(docs.isEmpty) return const Center(child: Text('مفيش طلبات لسه'));
+          return ListView.builder(
+            itemCount: docs.length,
+            itemBuilder: (context, i){
+              final data = docs[i].data() as Map<String,dynamic>;
+              final time = (data['time'] as Timestamp?)?.toDate();
+              return Card(
+                margin: const EdgeInsets.all(8),
+                child: ListTile(
+                  leading: Icon(data['type']=='طلب مندوب' ? Icons.delivery_dining : Icons.build, color: Colors.blue, size: 35),
+                  title: Text(data['type']??'', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('📞 ${data['phone']??''}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text('📍 ${data['address']??''}'),
+                    if(time!=null) Text('⏰ ${time.hour}:${time.minute} - ${time.day}/${time.month}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                  ]),
+                  trailing: IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () async {
+                    await docs[i].reference.delete();
+                  }),
+                ),
+              );
+            },
           );
         },
       ),
@@ -209,7 +260,7 @@ class _StorePageState extends State<StorePage> {
           if(docs.isEmpty) return const Center(child: Text('مفيش منتجات لسه - دوس + وضيف'));
           return GridView.builder(
             padding: const EdgeInsets.all(10),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 0.7, crossAxisSpacing: 10, mainAxisSpacing: 10),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 0.75, crossAxisSpacing: 10, mainAxisSpacing: 10),
             itemCount: docs.length,
             itemBuilder: (_, i){
               final data = docs[i].data() as Map<String,dynamic>;
