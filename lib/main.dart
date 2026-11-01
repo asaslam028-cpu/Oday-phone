@@ -181,8 +181,42 @@ class OrdersPage extends StatelessWidget { const OrdersPage({super.key});
   }
 }
 
+// ============ عروض اليوم مع تفاصيل وشراء ============
 class OffersPage extends StatefulWidget { const OffersPage({super.key}); @override State<OffersPage> createState() => _OffersPageState(); }
-class _OffersPageState extends State<OffersPage> { bool isAdmin=false; Future<void> checkAdmin() async { final c=TextEditingController(); showDialog(context: context, builder: (ctx)=>AlertDialog(title: const Text('ادمن'), content: TextField(controller: c, obscureText: true), actions: [ElevatedButton(onPressed: (){ if(c.text=='Oday123'){ setState(()=>isAdmin=true); Navigator.pop(ctx);} }, child: const Text('دخول'))])); }
+class _OffersPageState extends State<OffersPage> { 
+  bool isAdmin=false; 
+  Future<void> checkAdmin() async { final c=TextEditingController(); showDialog(context: context, builder: (ctx)=>AlertDialog(title: const Text('ادمن'), content: TextField(controller: c, obscureText: true), actions: [ElevatedButton(onPressed: (){ if(c.text=='Oday123'){ setState(()=>isAdmin=true); Navigator.pop(ctx);} }, child: const Text('دخول'))])); }
+
+  Future<void> showDetailAndBuy(Map<String,dynamic> data) async {
+    final n=TextEditingController(), p=TextEditingController(), a=TextEditingController();
+    showDialog(context: context, builder: (ctx)=>AlertDialog(
+      contentPadding: EdgeInsets.zero,
+      content: SingleChildScrollView(child: Column(children: [
+        if(data['image']!=null) Image.memory(base64Decode(data['image']), height: 250, width: double.infinity, fit: BoxFit.fill),
+        Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(data['title']??'', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          Text('${data['price']} جنيه', style: const TextStyle(fontSize: 18, color: Colors.red, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          const Divider(),
+          TextField(controller: n, decoration: const InputDecoration(labelText: 'اسمك')),
+          TextField(controller: p, decoration: const InputDecoration(labelText: 'رقمك'), keyboardType: TextInputType.phone),
+          TextField(controller: a, decoration: const InputDecoration(labelText: 'عنوانك')),
+        ])),
+      ])),
+      actions: [
+        TextButton(onPressed: ()=>Navigator.pop(ctx), child: const Text('الغاء')),
+        ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Colors.green), icon: const Icon(Icons.chat, color: Colors.white), label: const Text('شراء واتساب', style: TextStyle(color: Colors.white)), onPressed: () async {
+          if(n.text.isEmpty||p.text.isEmpty) return;
+          await FirebaseFirestore.instance.collection('orders').add({'type':'عرض - ${data['title']}', 'name':n.text, 'phone':p.text, 'address':a.text, 'details':'العرض: ${data['title']} - ${data['price']}', 'time':DateTime.now(), 'status':'قيد المراجعة'});
+          Navigator.pop(ctx);
+          String msg = "عايز العرض ده 🔥%0A📱 *${data['title']}*%0A💰 ${data['price']} جنيه%0A👤 ${n.text}%0A📞 ${p.text}%0A📍 ${a.text}";
+          final uri=Uri.parse('https://wa.me/201069068091?text=$msg');
+          if(await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }),
+      ],
+    ));
+  }
+
   Future<void> addOffer() async { final t=TextEditingController(), pr=TextEditingController(); String? img; final picker=ImagePicker();
     showDialog(context: context, builder: (ctx)=>StatefulBuilder(builder: (ctx2, setSt)=>AlertDialog(title: const Text('عرض جديد'), content: Column(mainAxisSize: MainAxisSize.min, children: [
       GestureDetector(onTap: () async { final x=await picker.pickImage(source: ImageSource.gallery, imageQuality: 50); if(x!=null){ final b=await x.readAsBytes(); setSt(()=>img=base64Encode(b)); } }, child: Container(height: 120, color: Colors.grey[300], child: img!=null?Image.memory(base64Decode(img!)):const Icon(Icons.add_a_photo))),
@@ -191,12 +225,48 @@ class _OffersPageState extends State<OffersPage> { bool isAdmin=false; Future<vo
   }
   @override Widget build(BuildContext context) { return Scaffold(appBar: AppBar(title: const Text('عروض اليوم 🔥'), actions: [if(!isAdmin) IconButton(icon: const Icon(Icons.lock), onPressed: checkAdmin), if(isAdmin) IconButton(icon: const Icon(Icons.add), onPressed: addOffer)]),
     body: StreamBuilder<QuerySnapshot>(stream: FirebaseFirestore.instance.collection('offers').orderBy('time', descending: true).snapshots(), builder: (context, snap){ if(!snap.hasData) return const Center(child: CircularProgressIndicator());
-      return ListView(children: snap.data!.docs.map((d){ final data=d.data() as Map<String,dynamic>; return Card(margin: const EdgeInsets.all(10), child: Column(children: [if(data['image']!=null) Image.memory(base64Decode(data['image']), height: 200, width: double.infinity, fit: BoxFit.cover), ListTile(title: Text(data['title']??''), subtitle: Text('${data['price']} جنيه', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)), trailing: isAdmin?IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: ()=>d.reference.delete()):null)])); }).toList());
+      return ListView(children: snap.data!.docs.map((d){ final data=d.data() as Map<String,dynamic>; return GestureDetector(
+        onTap: ()=>showDetailAndBuy(data),
+        child: Card(margin: const EdgeInsets.all(10), child: Column(children: [if(data['image']!=null) Image.memory(base64Decode(data['image']), height: 200, width: double.infinity, fit: BoxFit.cover), ListTile(title: Text(data['title']??''), subtitle: Text('${data['price']} جنيه', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)), trailing: isAdmin?IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: ()=>d.reference.delete()):const Icon(Icons.shopping_cart, color: Colors.green))]))); }).toList());
     })); }
 }
 
+// ============ مستعمل مع تفاصيل وشراء ============
 class UsedPhonesPage extends StatefulWidget { const UsedPhonesPage({super.key}); @override State<UsedPhonesPage> createState() => _UsedPhonesPageState(); }
-class _UsedPhonesPageState extends State<UsedPhonesPage> { bool isAdmin=false; Future<void> checkAdmin() async { final c=TextEditingController(); showDialog(context: context, builder: (ctx)=>AlertDialog(title: const Text('ادمن'), content: TextField(controller: c, obscureText: true), actions: [ElevatedButton(onPressed: (){ if(c.text=='Oday123'){ setState(()=>isAdmin=true); Navigator.pop(ctx);} }, child: const Text('دخول'))])); }
+class _UsedPhonesPageState extends State<UsedPhonesPage> { 
+  bool isAdmin=false; 
+  Future<void> checkAdmin() async { final c=TextEditingController(); showDialog(context: context, builder: (ctx)=>AlertDialog(title: const Text('ادمن'), content: TextField(controller: c, obscureText: true), actions: [ElevatedButton(onPressed: (){ if(c.text=='Oday123'){ setState(()=>isAdmin=true); Navigator.pop(ctx);} }, child: const Text('دخول'))])); }
+
+  Future<void> showDetailAndBuy(Map<String,dynamic> data) async {
+    final n=TextEditingController(), p=TextEditingController(), a=TextEditingController();
+    showDialog(context: context, builder: (ctx)=>AlertDialog(
+      contentPadding: EdgeInsets.zero,
+      content: SingleChildScrollView(child: Column(children: [
+        if(data['image']!=null) Image.memory(base64Decode(data['image']), height: 300, width: double.infinity, fit: BoxFit.fill),
+        Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(data['name']??'', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          Text('${data['price']} جنيه', style: const TextStyle(fontSize: 18, color: Colors.blue, fontWeight: FontWeight.bold)),
+          Text('الحالة: ${data['condition']??''}', style: const TextStyle(fontSize: 14)),
+          const Divider(),
+          TextField(controller: n, decoration: const InputDecoration(labelText: 'اسمك')),
+          TextField(controller: p, decoration: const InputDecoration(labelText: 'رقمك'), keyboardType: TextInputType.phone),
+          TextField(controller: a, decoration: const InputDecoration(labelText: 'عنوانك')),
+        ])),
+      ])),
+      actions: [
+        TextButton(onPressed: ()=>Navigator.pop(ctx), child: const Text('الغاء')),
+        ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Colors.green), icon: const Icon(Icons.chat, color: Colors.white), label: const Text('شراء واتساب', style: TextStyle(color: Colors.white)), onPressed: () async {
+          if(n.text.isEmpty||p.text.isEmpty) return;
+          await FirebaseFirestore.instance.collection('orders').add({'type':'مستعمل - ${data['name']}', 'name':n.text, 'phone':p.text, 'address':a.text, 'details':'الموبايل: ${data['name']} - ${data['price']} - ${data['condition']}', 'time':DateTime.now(), 'status':'قيد المراجعة'});
+          Navigator.pop(ctx);
+          String msg = "عايز الموبايل المستعمل ده 📱%0A*${data['name']}*%0A💰 ${data['price']} جنيه%0A📋 ${data['condition']}%0A👤 ${n.text}%0A📞 ${p.text}%0A📍 ${a.text}";
+          final uri=Uri.parse('https://wa.me/201069068091?text=$msg');
+          if(await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }),
+      ],
+    ));
+  }
+
   Future<void> addUsed() async { final n=TextEditingController(), pr=TextEditingController(), cond=TextEditingController(); String? img; final picker=ImagePicker();
     showDialog(context: context, builder: (ctx)=>StatefulBuilder(builder: (ctx2, setSt)=>AlertDialog(title: const Text('موبايل مستعمل'), content: Column(mainAxisSize: MainAxisSize.min, children: [
       GestureDetector(onTap: () async { final x=await picker.pickImage(source: ImageSource.gallery, imageQuality: 50); if(x!=null){ final b=await x.readAsBytes(); setSt(()=>img=base64Encode(b)); } }, child: Container(height: 120, color: Colors.grey[300], child: img!=null?Image.memory(base64Decode(img!)):const Icon(Icons.add_a_photo))),
@@ -205,7 +275,9 @@ class _UsedPhonesPageState extends State<UsedPhonesPage> { bool isAdmin=false; F
   }
   @override Widget build(BuildContext context) { return Scaffold(appBar: AppBar(title: const Text('موبايلات مستعملة'), actions: [if(!isAdmin) IconButton(icon: const Icon(Icons.lock), onPressed: checkAdmin), if(isAdmin) IconButton(icon: const Icon(Icons.add), onPressed: addUsed)]),
     body: StreamBuilder<QuerySnapshot>(stream: FirebaseFirestore.instance.collection('used_phones').orderBy('time', descending: true).snapshots(), builder: (context, snap){ if(!snap.hasData) return const Center(child: CircularProgressIndicator());
-      return GridView.count(crossAxisCount: 2, childAspectRatio: 0.7, children: snap.data!.docs.map((d){ final data=d.data() as Map<String,dynamic>; return Card(child: Column(children: [Expanded(child: data['image']!=null?Image.memory(base64Decode(data['image']), fit: BoxFit.cover, width: double.infinity):const Icon(Icons.phone_android)), Padding(padding: const EdgeInsets.all(4), child: Text(data['name']??'', style: const TextStyle(fontWeight: FontWeight.bold))), Text('${data['price']} جنيه', style: const TextStyle(color: Colors.blue)), Padding(padding: const EdgeInsets.all(2), child: Text(data['condition']??'', style: const TextStyle(fontSize: 11), maxLines: 2)), if(isAdmin) IconButton(icon: const Icon(Icons.delete, color: Colors.red, size: 20), onPressed: ()=>d.reference.delete())])); }).toList());
+      return GridView.count(crossAxisCount: 2, childAspectRatio: 0.7, children: snap.data!.docs.map((d){ final data=d.data() as Map<String,dynamic>; return GestureDetector(
+        onTap: ()=>showDetailAndBuy(data),
+        child: Card(child: Column(children: [Expanded(child: data['image']!=null?Image.memory(base64Decode(data['image']), fit: BoxFit.cover, width: double.infinity):const Icon(Icons.phone_android)), Padding(padding: const EdgeInsets.all(4), child: Text(data['name']??'', style: const TextStyle(fontWeight: FontWeight.bold))), Text('${data['price']} جنيه', style: const TextStyle(color: Colors.blue)), Padding(padding: const EdgeInsets.all(2), child: Text(data['condition']??'', style: const TextStyle(fontSize: 11), maxLines: 2)), Container(margin: const EdgeInsets.all(2), padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(8)), child: const Text('شراء', style: TextStyle(color: Colors.white, fontSize: 10))), if(isAdmin) IconButton(icon: const Icon(Icons.delete, color: Colors.red, size: 20), onPressed: ()=>d.reference.delete())]))); }).toList());
     })); }
 }
 
@@ -226,16 +298,96 @@ class ContactPage extends StatelessWidget { const ContactPage({super.key});
   ]))); }
 }
 
+// ============ متجر الإكسسوارات مع تفاصيل وشراء واتساب ============
 class StorePage extends StatefulWidget { const StorePage({super.key}); @override State<StorePage> createState() => _StorePageState(); }
-class _StorePageState extends State<StorePage> { bool isAdmin=false; Future<void> checkAdmin() async { final c=TextEditingController(); showDialog(context: context, builder: (ctx)=>AlertDialog(title: const Text('ادمن'), content: TextField(controller: c, obscureText: true), actions: [ElevatedButton(onPressed: (){ if(c.text=='Oday123'){ setState(()=>isAdmin=true); Navigator.pop(ctx);} }, child: const Text('دخول'))])); }
+class _StorePageState extends State<StorePage> { 
+  bool isAdmin=false; 
+  Future<void> checkAdmin() async { final c=TextEditingController(); showDialog(context: context, builder: (ctx)=>AlertDialog(title: const Text('ادمن'), content: TextField(controller: c, obscureText: true), actions: [ElevatedButton(onPressed: (){ if(c.text=='Oday123'){ setState(()=>isAdmin=true); Navigator.pop(ctx);} }, child: const Text('دخول'))])); }
+
+  Future<void> showProductDetail(Map<String,dynamic> data) async {
+    final nameCtrl=TextEditingController();
+    final phoneCtrl=TextEditingController();
+    final addressCtrl=TextEditingController();
+    
+    showDialog(context: context, builder: (ctx)=>AlertDialog(
+      contentPadding: EdgeInsets.zero,
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if(data['imageBase64']!=null) Image.memory(base64Decode(data['imageBase64']), height: 250, width: double.infinity, fit: BoxFit.fill),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(data['name']??'', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 5),
+                  Text('${data['price']} جنيه', style: const TextStyle(fontSize: 18, color: Colors.blue, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+                  Text('المواصفات:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey[700])),
+                  Text(data['desc']??'لا يوجد وصف', style: const TextStyle(fontSize: 14)),
+                  const SizedBox(height: 15),
+                  const Divider(),
+                  const Text('بياناتك للشراء:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'اسمك', prefixIcon: Icon(Icons.person))),
+                  TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: 'رقمك', prefixIcon: Icon(Icons.phone)), keyboardType: TextInputType.phone),
+                  TextField(controller: addressCtrl, decoration: const InputDecoration(labelText: 'عنوانك', prefixIcon: Icon(Icons.location_on))),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: ()=>Navigator.pop(ctx), child: const Text('الغاء')),
+        ElevatedButton.icon(
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+          icon: const Icon(Icons.shopping_cart, color: Colors.white),
+          label: const Text('شراء الآن واتساب', style: TextStyle(color: Colors.white)),
+          onPressed: () async {
+            if(nameCtrl.text.isEmpty || phoneCtrl.text.isEmpty){
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('اكتب اسمك ورقمك')));
+              return;
+            }
+            await FirebaseFirestore.instance.collection('orders').add({
+              'type':'شراء منتج - ${data['name']}',
+              'name':nameCtrl.text,
+              'phone':phoneCtrl.text,
+              'address':addressCtrl.text,
+              'details':'المنتج: ${data['name']} - السعر: ${data['price']} - ${data['desc']}',
+              'time':DateTime.now(),
+              'status':'قيد المراجعة'
+            });
+            Navigator.pop(ctx);
+            String msg = "سلام عليكم Oday Phone 🔥%0Aعايز اشتري:%0A📱 *${data['name']}*%0A💰 السعر: ${data['price']} جنيه%0A👤 الاسم: ${nameCtrl.text}%0A📞 الرقم: ${phoneCtrl.text}%0A📍 العنوان: ${addressCtrl.text}%0Aابعتلي مندوب بسرعة";
+            final uri = Uri.parse('https://wa.me/201069068091?text=$msg');
+            if(await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
+          },
+        ),
+      ],
+    ));
+  }
+
   Future<void> addProduct() async { final n=TextEditingController(), pr=TextEditingController(), d=TextEditingController(); String? img; final picker=ImagePicker();
     showDialog(context: context, builder: (ctx)=>StatefulBuilder(builder: (ctx2, setSt)=>AlertDialog(title: const Text('منتج جديد'), content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
       GestureDetector(onTap: () async { final x=await picker.pickImage(source: ImageSource.gallery, imageQuality: 50); if(x!=null){ final b=await x.readAsBytes(); setSt(()=>img=base64Encode(b)); } }, child: Container(height: 120, color: Colors.grey[300], child: img!=null?Image.memory(base64Decode(img!)):const Icon(Icons.add_a_photo))),
-      TextField(controller: n, decoration: const InputDecoration(labelText: 'اسم المنتج')), TextField(controller: pr, decoration: const InputDecoration(labelText: 'السعر')), TextField(controller: d, decoration: const InputDecoration(labelText: 'المواصفات'), maxLines: 2),
+      TextField(controller: n, decoration: const InputDecoration(labelText: 'اسم المنتج')), 
+      TextField(controller: pr, decoration: const InputDecoration(labelText: 'السعر')), 
+      TextField(controller: d, decoration: const InputDecoration(labelText: 'المواصفات بالتفصيل'), maxLines: 4),
     ])), actions: [ElevatedButton(onPressed: () async { if(n.text.isEmpty||img==null) return; await FirebaseFirestore.instance.collection('products').add({'name':n.text,'price':pr.text,'desc':d.text,'imageBase64':img,'time':DateTime.now()}); Navigator.pop(ctx); }, child: const Text('حفظ'))])));
   }
+
   @override Widget build(BuildContext context) { return Scaffold(appBar: AppBar(title: const Text('متجر الإكسسوارات'), actions: [if(!isAdmin) IconButton(icon: const Icon(Icons.lock), onPressed: checkAdmin), if(isAdmin) IconButton(icon: const Icon(Icons.add), onPressed: addProduct)]),
     body: StreamBuilder<QuerySnapshot>(stream: FirebaseFirestore.instance.collection('products').orderBy('time', descending: true).snapshots(), builder: (context, snap){ if(!snap.hasData) return const Center(child: CircularProgressIndicator());
-      return GridView.count(crossAxisCount: 2, childAspectRatio: 0.75, children: snap.data!.docs.map((d){ final data=d.data() as Map<String,dynamic>; return Card(child: Column(children: [Expanded(child: data['imageBase64']!=null?Image.memory(base64Decode(data['imageBase64']), fit: BoxFit.cover, width: double.infinity):const Icon(Icons.image)), Text(data['name']??'', style: const TextStyle(fontWeight: FontWeight.bold)), Text('${data['price']} جنيه', style: const TextStyle(color: Colors.blue)), if(isAdmin) IconButton(icon: const Icon(Icons.delete, color: Colors.red, size: 20), onPressed: ()=>d.reference.delete())])); }).toList());
+      return GridView.count(crossAxisCount: 2, childAspectRatio: 0.75, children: snap.data!.docs.map((d){ final data=d.data() as Map<String,dynamic>; return GestureDetector(
+        onTap: ()=>showProductDetail(data),
+        child: Card(child: Column(children: [
+          Expanded(child: data['imageBase64']!=null?Image.memory(base64Decode(data['imageBase64']), fit: BoxFit.cover, width: double.infinity):const Icon(Icons.image)), 
+          Padding(padding: const EdgeInsets.all(4), child: Text(data['name']??'', style: const TextStyle(fontWeight: FontWeight.bold), maxLines: 1)), 
+          Text('${data['price']} جنيه', style: const TextStyle(color: Colors.blue)),
+          Container(margin: const EdgeInsets.all(4), padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(10)), child: const Text('اضغط للشراء', style: TextStyle(color: Colors.white, fontSize: 11))),
+          if(isAdmin) IconButton(icon: const Icon(Icons.delete, color: Colors.red, size: 20), onPressed: ()=>d.reference.delete())
+        ]))); }).toList());
     })); }
 }
