@@ -33,7 +33,7 @@ class OdayApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: Store.i,
-      builder: (, _) {
+     builder: (context, child) {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'Oday Phone',
