@@ -548,7 +548,7 @@ class _Shop extends State<Shop> {
                               child: img.isNotEmpty
                                   ? ClipRRect(
                                       borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                                      child: Image.network(img, fit: BoxFit.cover, errorBuilder: (, _, _) => Icon(iconData, size: 70, color: const Color(0xFF0B1A3A))),
+                                      child: Image.network(img, fit: BoxFit.cover, errorBuilder: (ctx,err,st) => Icon(iconData, size: 70, color: const Color(0xFF0B1A3A))),
                                     )
                                   : Icon(iconData, size: 70, color: const Color(0xFF0B1A3A)),
                             ),
