@@ -69,7 +69,7 @@ Future<void> showOrderDialog(BuildContext context, String type) async {
     actions: [ TextButton(onPressed: ()=>Navigator.pop(ctx), child: const Text('الغاء')),
       ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: orangeC), onPressed: () async {
         if(n.text.isEmpty||p.text.isEmpty) return;
-        await FirebaseFirestore.instance.collection('orders').add({'type':type,'name':n.text,'phone'😛.text,'address':a.text,'details':d.text,'time':DateTime.now(),'status':'قيد المراجعة'});
+        await FirebaseFirestore.instance.collection('orders').add({'type':type,'name':n.text,'phone'text,'address':a.text,'details':d.text,'time':DateTime.now(),'status':'قيد المراجعة'});
         Navigator.pop(ctx); ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تم ارسال $type ✅')));
       }, child: const Text('ارسال', style: TextStyle(color: Colors.white)))],
   ));
