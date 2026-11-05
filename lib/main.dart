@@ -10,6 +10,24 @@ class Store extends ChangeNotifier {
   List<Map> orders = [];
   List<Map> cart = [];
 
+  List<Map> products = [
+    {'name': 'سماعات لاسلكية برو', 'price': 899, 'rate': '4.8', 'cat': 'سماعات', 'tag': 'الافضل مبيعا', 'color': 0xFFD6EAF0, 'desc': 'سماعة بلوتوث بعزل ضوضاء وبطارية 30 ساعة', 'img': ''},
+    {'name': 'شاحن سريع 25W', 'price': 349, 'rate': '4.6', 'cat': 'شواحن', 'tag': 'خصم 20', 'color': 0xFFF0F0F0, 'desc': 'شاحن سريع يشحن 50% في 30 دقيقة', 'img': ''},
+    {'name': 'كفر حماية ايفون 15', 'price': 199, 'rate': '4.7', 'cat': 'كفرات', 'tag': '', 'color': 0xFFF5F5F5, 'desc': 'كفر ضد الصدمات والخدش', 'img': ''},
+    {'name': 'كابل USB-C مضفور 1M', 'price': 129, 'rate': '4.5', 'cat': 'كابلات', 'tag': '', 'color': 0xFFF5F5F5, 'desc': 'كابل مضفور سريع الشحن ونقل البيانات', 'img': ''},
+    {'name': 'سماعة بلوتوث', 'price': 450, 'rate': '4.8', 'cat': 'سماعات', 'tag': '', 'color': 0xFFD6EAF0, 'desc': 'صوت نقي وباس قوي', 'img': ''},
+    {'name': 'صيانة شاشة', 'price': 500, 'rate': '4.9', 'cat': 'صيانة', 'tag': '', 'color': 0xFFD6EAF0, 'desc': 'تغيير شاشة اصلية بضمان 6 شهور', 'img': ''},
+    {'name': 'جراب ايفون', 'price': 150, 'rate': '4.7', 'cat': 'كفرات', 'tag': '', 'color': 0xFFF5F5F5, 'desc': 'جراب شيك وخفيف', 'img': ''},
+    {'name': 'سكرينة حماية', 'price': 80, 'rate': '4.6', 'cat': 'كفرات', 'tag': '', 'color': 0xFFF5F5F5, 'desc': 'سكرينة زجاج ضد الكسر', 'img': ''},
+    {'name': 'باور بنك', 'price': 900, 'rate': '4.8', 'cat': 'شواحن', 'tag': '', 'color': 0xFFF0F0F0, 'desc': 'باور بنك 20000 ملي امبير', 'img': ''},
+    {'name': 'كابل تايب سي', 'price': 120, 'rate': '4.5', 'cat': 'كابلات', 'tag': '', 'color': 0xFFF5F5F5, 'desc': 'كابل تايب سي اصلي', 'img': ''},
+  ];
+
+  void addProduct(Map m) {
+    products.insert(0, m);
+    notifyListeners();
+  }
+
   void addCart(Map m) {
     cart.add(m);
     notifyListeners();
@@ -33,7 +51,7 @@ class OdayApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: Store.i,
-     builder: (context, child) {
+      builder: (context, child) {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'Oday Phone',
@@ -48,7 +66,7 @@ class OdayApp extends StatelessWidget {
   }
 }
 
-// 1 - شاشة البداية الجديدة
+// 1 - شاشة البداية
 class Splash extends StatelessWidget {
   const Splash({super.key});
   @override
@@ -107,6 +125,7 @@ class Splash extends StatelessWidget {
   }
 }
 
+// 2 - الرئيسية
 class Home extends StatefulWidget {
   const Home({super.key});
   @override
@@ -115,8 +134,46 @@ class Home extends StatefulWidget {
 
 class _Home extends State<Home> {
   int idx = 0;
+  int adminTaps = 0;
   final teal = const Color(0xFF00B4A6);
   final orange = const Color(0xFFFF7A00);
+
+  void openAdminGate() {
+    adminTaps++;
+    if (adminTaps >= 5) {
+      adminTaps = 0;
+      showDialog(
+        context: context,
+        builder: (_) {
+          final pinC = TextEditingController();
+          return AlertDialog(
+            title: const Text('دخول الادمن'),
+            content: TextField(
+              controller: pinC,
+              keyboardType: TextInputType.number,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'اكتب الرقم السري', border: OutlineInputBorder()),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text('الغاء')),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF7A00)),
+                onPressed: () {
+                  if (pinC.text == '1234') {
+                    Navigator.pop(context);
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminPage()));
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('الرقم غلط')));
+                  }
+                },
+                child: const Text('دخول', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          );
+        },
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -127,7 +184,6 @@ class _Home extends State<Home> {
       const Courier(),
       const Checkout(),
       const MyOrders(),
-      const AdminPage(),
     ];
     return Scaffold(
       body: pages[idx],
@@ -144,7 +200,6 @@ class _Home extends State<Home> {
           BottomNavigationBarItem(icon: Icon(Icons.delivery_dining), label: 'المندوب'),
           BottomNavigationBarItem(icon: Icon(Icons.payment), label: 'الدفع'),
           BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'طلباتي'),
-          BottomNavigationBarItem(icon: Icon(Icons.admin_panel_settings), label: 'الادمن'),
         ],
       ),
     );
@@ -168,10 +223,13 @@ class _Home extends State<Home> {
                     ],
                   ),
                 ),
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: teal.withOpacity(0.15),
-                  child: Icon(Icons.person, color: teal, size: 30),
+                GestureDetector(
+                  onTap: openAdminGate,
+                  child: CircleAvatar(
+                    radius: 24,
+                    backgroundColor: teal.withOpacity(0.15),
+                    child: Icon(Icons.person, color: teal, size: 30),
+                  ),
                 ),
               ],
             ),
@@ -283,7 +341,7 @@ class _Home extends State<Home> {
   }
 }
 
-// 2 - صفحة صيانة هواتف من المنزل - جديدة
+// 3 - صيانة هواتف من المنزل
 class MaintenancePage extends StatefulWidget {
   const MaintenancePage({super.key});
   @override
@@ -357,6 +415,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
   }
 }
 
+// 4 - المتجر
 class Shop extends StatefulWidget {
   const Shop({super.key});
   @override
@@ -365,14 +424,7 @@ class Shop extends StatefulWidget {
 
 class _Shop extends State<Shop> {
   String f = 'الكل';
-  final items = [
-    {'name': 'سماعات لاسلكية برو', 'price': 899, 'rate': '4.8', 'cat': 'سماعات', 'tag': 'الافضل مبيعا', 'color': 0xFFD6EAF0},
-    {'name': 'شاحن سريع 25W', 'price': 349, 'rate': '4.6', 'cat': 'شواحن', 'tag': 'خصم 20', 'color': 0xFFF0F0F0},
-    {'name': 'كفر حماية ايفون 15', 'price': 199, 'rate': '4.7', 'cat': 'كفرات', 'tag': '', 'color': 0xFFF5F5F5},
-    {'name': 'كابل USB-C مضفور 1M', 'price': 129, 'rate': '4.5', 'cat': 'كابلات', 'tag': '', 'color': 0xFFF5F5F5},
-    {'name': 'سماعة بلوتوث', 'price': 450, 'rate': '4.8', 'cat': 'سماعات', 'tag': '', 'color': 0xFFD6EAF0},
-    {'name': 'صيانة شاشة', 'price': 500, 'rate': '4.9', 'cat': 'صيانة', 'tag': '', 'color': 0xFFD6EAF0},
-  ];
+  List get items => Store.i.products;
 
   @override
   Widget build(BuildContext context) {
@@ -438,8 +490,8 @@ class _Shop extends State<Shop> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('المنتجات', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
-                Row(
-                  children: const [
+                const Row(
+                  children: [
                     Text('الاكثر مبيعا', style: TextStyle(color: Color(0xFF00B4A6), fontWeight: FontWeight.bold)),
                     Icon(Icons.keyboard_arrow_down, color: Color(0xFF00B4A6)),
                   ],
@@ -461,76 +513,104 @@ class _Shop extends State<Shop> {
                 if (p['cat'] == 'كفرات') iconData = Icons.phone_android;
                 if (p['cat'] == 'كابلات') iconData = Icons.usb;
                 if (p['cat'] == 'صيانة') iconData = Icons.build;
-                return Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10)],
-                  ),
-                  child: Column(
-                    children: [
-                      Stack(
-                        children: [
-                          Container(
-                            height: 130,
-                            width: double.infinity,
-                            decoration: BoxDecoration(color: Color(p['color'] as int), borderRadius: const BorderRadius.vertical(top: Radius.circular(16))),
-                            child: Icon(iconData, size: 70, color: const Color(0xFF0B1A3A)),
-                          ),
-                          if ((p['tag'] as String).isNotEmpty)
-                            Positioned(
-                              top: 8,
-                              left: 8,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(color: const Color(0xFFFF7A00), borderRadius: BorderRadius.circular(6)),
-                                child: Text(p['tag'], style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                              ),
-                            ),
-                        ],
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(10),
-                        child: Column(
+                String img = (p['img'] ?? '').toString();
+                return InkWell(
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (_) => AlertDialog(
+                        title: Text(p['name']),
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(p['name'], textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14), maxLines: 2),
-                            const SizedBox(height: 4),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.star, color: Colors.amber, size: 14),
-                                const Icon(Icons.star, color: Colors.amber, size: 14),
-                                const Icon(Icons.star, color: Colors.amber, size: 14),
-                                const Icon(Icons.star, color: Colors.amber, size: 14),
-                                const Icon(Icons.star_half, color: Colors.amber, size: 14),
-                                Text(' (${p['rate']})', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text('${p['price']} جنيه', style: const TextStyle(color: Color(0xFF00B4A6), fontWeight: FontWeight.w900, fontSize: 17)),
-                            const SizedBox(height: 6),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF7A00), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-                                onPressed: () {
-                                  Store.i.addCart(p);
-                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تمت الاضافة للسلة')));
-                                },
-                                child: const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.shopping_cart, size: 16, color: Colors.white),
-                                    SizedBox(width: 4),
-                                    Text('اضافة للسلة', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                                  ],
-                                ),
-                              ),
-                            ),
+                            if (img.isNotEmpty) ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.network(img, height: 180, width: double.infinity, fit: BoxFit.cover)),
+                            const SizedBox(height: 10),
+                            Text(p['desc'] ?? ''),
+                            const SizedBox(height: 10),
+                            Text('${p['price']} جنيه', style: const TextStyle(color: Color(0xFF00B4A6), fontWeight: FontWeight.w900, fontSize: 18)),
                           ],
                         ),
+                        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('اغلاق'))],
                       ),
-                    ],
+                    );
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10)],
+                    ),
+                    child: Column(
+                      children: [
+                        Stack(
+                          children: [
+                            Container(
+                              height: 130,
+                              width: double.infinity,
+                              decoration: BoxDecoration(color: Color(p['color'] as int), borderRadius: const BorderRadius.vertical(top: Radius.circular(16))),
+                              child: img.isNotEmpty
+                                  ? ClipRRect(
+                                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                                      child: Image.network(img, fit: BoxFit.cover, errorBuilder: (, _, _) => Icon(iconData, size: 70, color: const Color(0xFF0B1A3A))),
+                                    )
+                                  : Icon(iconData, size: 70, color: const Color(0xFF0B1A3A)),
+                            ),
+                            if ((p['tag'] as String).isNotEmpty)
+                              Positioned(
+                                top: 8,
+                                left: 8,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(color: const Color(0xFFFF7A00), borderRadius: BorderRadius.circular(6)),
+                                  child: Text(p['tag'], style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                                ),
+                              ),
+                          ],
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(10),
+                          child: Column(
+                            children: [
+                              Text(p['name'], textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14), maxLines: 2),
+                              const SizedBox(height: 4),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.star, color: Colors.amber, size: 14),
+                                  const Icon(Icons.star, color: Colors.amber, size: 14),
+                                  const Icon(Icons.star, color: Colors.amber, size: 14),
+                                  const Icon(Icons.star, color: Colors.amber, size: 14),
+                                  const Icon(Icons.star_half, color: Colors.amber, size: 14),
+                                  Text(' (${p['rate']})', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text('${p['price']} جنيه', style: const TextStyle(color: Color(0xFF00B4A6), fontWeight: FontWeight.w900, fontSize: 17)),
+                              const SizedBox(height: 6),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF7A00), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                                  onPressed: () {
+                                    Store.i.addCart(p);
+                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تمت الاضافة للسلة')));
+                                  },
+                                  child: const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.shopping_cart, size: 16, color: Colors.white),
+                                      SizedBox(width: 4),
+                                      Text('اضافة للسلة', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
@@ -542,6 +622,7 @@ class _Shop extends State<Shop> {
   }
 }
 
+// 5 - المندوب
 class Courier extends StatefulWidget {
   const Courier({super.key});
   @override
@@ -770,6 +851,7 @@ class DashedLine extends CustomPainter {
   bool shouldRepaint(CustomPainter oldDelegate) => false;
 }
 
+// 6 - الدفع
 class Checkout extends StatefulWidget {
   const Checkout({super.key});
   @override
@@ -875,14 +957,14 @@ class _Checkout extends State<Checkout> {
                             discount = code.text.isNotEmpty ? 30 : 0;
                           });
                         },
-                        child:Text('تطبيق', style: TextStyle(color: Colors.white)),
+                        child: const Text('تطبيق', style: TextStyle(color: Colors.white)),
                       ),
                     ],
                   ),
                   const SizedBox(height: 10),
-                  Row(
+                  const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children:[
+                    children: [
                       Icon(Icons.verified_user, color: Color(0xFF00B4A6), size: 16),
                       SizedBox(width: 4),
                       Text('دفع امن ومشفر - محمي بواسطة SSL 256-bit', style: TextStyle(color: Colors.grey, fontSize: 12)),
@@ -895,7 +977,7 @@ class _Checkout extends State<Checkout> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('المبلغ الاجمالي', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+                const Text('المبلغ الاجمالي', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
                 Text('$total جنيه', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFFFF7A00))),
               ],
             ),
@@ -974,6 +1056,7 @@ class _Checkout extends State<Checkout> {
   }
 }
 
+// 7 - طلباتي
 class MyOrders extends StatelessWidget {
   const MyOrders({super.key});
   @override
@@ -1028,53 +1111,144 @@ class MyOrders extends StatelessWidget {
   }
 }
 
-// 3 - صفحة الادمن - جديدة
+// 8 - الادمن - مستخبي
 class AdminPage extends StatelessWidget {
   const AdminPage({super.key});
   @override
   Widget build(BuildContext context) {
     var o = Store.i.orders;
-    return SafeArea(
-      child: Padding(
+    return Scaffold(
+      appBar: AppBar(title: const Text('لوحة تحكم الادمن'), backgroundColor: const Color(0xFF00B4A6)),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF7A00), padding: const EdgeInsets.all(14)),
+                  onPressed: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AddProductPage()));
+                  },
+                  child: const Text('اضافة منتج جديد +', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text('طلبات اليوم ${o.length}', style: const TextStyle(color: Color(0xFFFF7A00), fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              if (o.isEmpty)
+                const Expanded(child: Center(child: Text('مفيش طلبات النهاردة')))
+              else
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: o.length,
+                    itemBuilder: (c, i) {
+                      var x = o[i];
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10)]),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(children: [Text('طلب #${x['id']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)), const Spacer(), Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: const Color(0xFFFF7A00), borderRadius: BorderRadius.circular(20)), child: Text(x['status'], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)))]),
+                            const SizedBox(height: 6),
+                            Text('${x['items']}'),
+                            Text('الاسم: ${x['name']} - ${x['phone']}'),
+                            Text('العنوان: ${x['address']} - ${x['pay']}'),
+                            const SizedBox(height: 8),
+                            Row(children: [
+                              Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00B4A6)), onPressed: () => Store.i.setStatus(i, 'تم'), child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.check, color: Colors.white, size: 18), SizedBox(width: 4), Text('تم', style: TextStyle(color: Colors.white))]))),
+                              const SizedBox(width: 12),
+                              Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF7A00)), onPressed: () => Store.i.setStatus(i, 'جاري الصيانة'), child: const Text('جاري الصيانة', style: TextStyle(color: Colors.white)))),
+                            ]),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// 9 - اضافة منتج جديد
+class AddProductPage extends StatefulWidget {
+  const AddProductPage({super.key});
+  @override
+  State<AddProductPage> createState() => _AddProductPageState();
+}
+
+class _AddProductPageState extends State<AddProductPage> {
+  final nameC = TextEditingController();
+  final priceC = TextEditingController();
+  final descC = TextEditingController();
+  final imgC = TextEditingController();
+  String cat = 'سماعات';
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('اضافة منتج'), backgroundColor: const Color(0xFF00B4A6)),
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('لوحة تحكم الادمن', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
-            Text('طلبات اليوم ${o.length}', style: const TextStyle(color: Color(0xFFFF7A00), fontWeight: FontWeight.bold)),
+            const Text('اسم المنتج', style: TextStyle(fontWeight: FontWeight.bold)),
+            TextField(controller: nameC, decoration: const InputDecoration(hintText: 'مثال: سماعة ايربودز', border: OutlineInputBorder())),
             const SizedBox(height: 12),
-            if (o.isEmpty)
-              const Expanded(child: Center(child: Text('مفيش طلبات النهاردة')))
-            else
-              Expanded(
-                child: ListView.builder(
-                  itemCount: o.length,
-                  itemBuilder: (c, i) {
-                    var x = o[i];
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10)]),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(children: [Text('طلب #${x['id']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)), const Spacer(), Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: const Color(0xFFFF7A00), borderRadius: BorderRadius.circular(20)), child: Text(x['status'], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)))]),
-                          const SizedBox(height: 6),
-                          Text('${x['items']}'),
-                          Text('الاسم: ${x['name']} - ${x['phone']}'),
-                          Text('العنوان: ${x['address']} - ${x['pay']}'),
-                          const SizedBox(height: 10),
-                          Row(children: [
-                            Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00B4A6)), onPressed: () => Store.i.setStatus(i, 'تم'), child: const Text('تم ✅', style: TextStyle(color: Colors.white)))),
-                            const SizedBox(width: 10),
-                            Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF7A00)), onPressed: () => Store.i.setStatus(i, 'جاري الصيانة'), child: const Text('جاري الصيانة', style: TextStyle(color: Colors.white)))),
-                          ]),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+            const Text('السعر', style: TextStyle(fontWeight: FontWeight.bold)),
+            TextField(controller: priceC, keyboardType: TextInputType.number, decoration: const InputDecoration(hintText: 'مثال: 899', border: OutlineInputBorder())),
+            const SizedBox(height: 12),
+            const Text('التصنيف', style: TextStyle(fontWeight: FontWeight.bold)),
+            Wrap(
+              spacing: 8,
+              children: ['سماعات', 'شواحن', 'كفرات', 'كابلات', 'صيانة'].map((e) {
+                bool sel = cat == e;
+                return ChoiceChip(label: Text(e), selected: sel, selectedColor: const Color(0xFF00B4A6), labelStyle: TextStyle(color: sel ? Colors.white : Colors.black), onSelected: (_) => setState(() => cat = e));
+              }).toList(),
+            ),
+            const SizedBox(height: 12),
+            const Text('وصف المنتج بالتفاصيل', style: TextStyle(fontWeight: FontWeight.bold)),
+            TextField(controller: descC, maxLines: 3, decoration: const InputDecoration(hintText: 'اكتب مواصفات المنتج هنا...', border: OutlineInputBorder())),
+            const SizedBox(height: 12),
+            const Text('لينك صورة المنتج', style: TextStyle(fontWeight: FontWeight.bold)),
+            TextField(controller: imgC, decoration: const InputDecoration(hintText: 'انسخ لينك الصورة من جوجل وحطه هنا', border: OutlineInputBorder())),
+            const SizedBox(height: 8),
+            const Text('لو مش عندك لينك، سيبه فاضي وهيظهر ايقونة مكان الصورة', style: TextStyle(color: Colors.grey, fontSize: 12)),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF7A00), padding: const EdgeInsets.all(15)),
+                onPressed: () {
+                  if (nameC.text.isEmpty || priceC.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('اكتب الاسم والسعر الاول')));
+                    return;
+                  }
+                  Store.i.addProduct({
+                    'name': nameC.text,
+                    'price': int.tryParse(priceC.text) ?? 0,
+                    'rate': '5.0',
+                    'cat': cat,
+                    'tag': 'جديد',
+                    'color': 0xFFD6EAF0,
+                    'desc': descC.text,
+                    'img': imgC.text,
+                  });
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم اضافة المنتج في المتجر')));
+                },
+                child: const Text('حفظ المنتج', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
               ),
+            ),
           ],
         ),
       ),
