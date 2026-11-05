@@ -12,13 +12,13 @@ class Store extends ChangeNotifier {
 
   List<Map> products = [
     {'name': 'سماعات لاسلكية برو', 'price': 899, 'rate': '4.8', 'cat': 'سماعات', 'tag': 'الافضل مبيعا', 'color': 0xFFD6EAF0, 'desc': 'سماعة بلوتوث بعزل ضوضاء وبطارية 30 ساعة', 'img': ''},
-    {'name': 'شاحن سريع 25W', 'price': 349, 'rate': '4.6', 'cat': 'شواحن', 'tag': 'خصم 20', 'color': 0xFFF0F0F0, 'desc': 'شاحن سريع يشحن 50% في 30 دقيقة', 'img': ''},
+    {'name': 'شاحن سريع 25W', 'price': 349, 'rate': '4.6', 'cat': 'شواحن', 'tag': 'خصم 20', 'color': 0xFFF0F0F0, 'desc': 'شاحن سريع يشحن 50 في المية في 30 دقيقة', 'img': ''},
     {'name': 'كفر حماية ايفون 15', 'price': 199, 'rate': '4.7', 'cat': 'كفرات', 'tag': '', 'color': 0xFFF5F5F5, 'desc': 'كفر ضد الصدمات والخدش', 'img': ''},
     {'name': 'كابل USB-C مضفور 1M', 'price': 129, 'rate': '4.5', 'cat': 'كابلات', 'tag': '', 'color': 0xFFF5F5F5, 'desc': 'كابل مضفور سريع الشحن ونقل البيانات', 'img': ''},
     {'name': 'سماعة بلوتوث', 'price': 450, 'rate': '4.8', 'cat': 'سماعات', 'tag': '', 'color': 0xFFD6EAF0, 'desc': 'صوت نقي وباس قوي', 'img': ''},
     {'name': 'صيانة شاشة', 'price': 500, 'rate': '4.9', 'cat': 'صيانة', 'tag': '', 'color': 0xFFD6EAF0, 'desc': 'تغيير شاشة اصلية بضمان 6 شهور', 'img': ''},
     {'name': 'جراب ايفون', 'price': 150, 'rate': '4.7', 'cat': 'كفرات', 'tag': '', 'color': 0xFFF5F5F5, 'desc': 'جراب شيك وخفيف', 'img': ''},
-    {'name': 'سكرينة حماية', 'price': 80, 'rate': '4.6', 'cat': 'كفرات', 'tag': '', 'color': 0xFFF5F5F5, 'desc': 'سكرينة زجاج ضد الكسر', 'img': ''},
+    {'name': 'سكرينة حماية', 'price': 80.0, 'rate': '4.6', 'cat': 'كفرات', 'tag': '', 'color': 0xFFF5F5F5, 'desc': 'سكرينة زجاج ضد الكسر', 'img': ''},
     {'name': 'باور بنك', 'price': 900, 'rate': '4.8', 'cat': 'شواحن', 'tag': '', 'color': 0xFFF0F0F0, 'desc': 'باور بنك 20000 ملي امبير', 'img': ''},
     {'name': 'كابل تايب سي', 'price': 120, 'rate': '4.5', 'cat': 'كابلات', 'tag': '', 'color': 0xFFF5F5F5, 'desc': 'كابل تايب سي اصلي', 'img': ''},
   ];
@@ -66,7 +66,6 @@ class OdayApp extends StatelessWidget {
   }
 }
 
-// 1 - شاشة البداية
 class Splash extends StatelessWidget {
   const Splash({super.key});
   @override
@@ -112,7 +111,7 @@ class Splash extends StatelessWidget {
               const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.location_on, color: Color(0xFF00B4A6), size: 18),
+                  Icon(Icons.location_on, color: Color(0xFF00B4A6), size: 18.0),
                   SizedBox(width: 6),
                   Expanded(child: Text('الاسماعيلية - ابو عطوة - الشارع التجاري - امام ماركت التوحيد', textAlign: TextAlign.center, style: TextStyle(color: Colors.white70, fontSize: 12))),
                 ],
@@ -125,7 +124,6 @@ class Splash extends StatelessWidget {
   }
 }
 
-// 2 - الرئيسية
 class Home extends StatefulWidget {
   const Home({super.key});
   @override
@@ -323,25 +321,24 @@ class _Home extends State<Home> {
       ),
       child: Row(
         children: [
-          CircleAvatar(radius: 28, backgroundColor: c.withOpacity(0.15), child: Icon(ic, color: c, size: 28)),
+          CircleAvatar(radius: 28.0, backgroundColor: c.withOpacity(0.15), child: Icon(ic, color: c, size: 28.0)),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(t, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                Text(t, style: const TextStyle(fontSize: 18.0, fontWeight: FontWeight.w900)),
                 Text(sub, style: const TextStyle(color: Colors.grey)),
               ],
             ),
           ),
-          Icon(Icons.arrow_forward_ios, color: orange, size: 18),
+          Icon(Icons.arrow_forward_ios, color: orange, size: 18.0),
         ],
       ),
     );
   }
 }
 
-// 3 - صيانة هواتف من المنزل
 class MaintenancePage extends StatefulWidget {
   const MaintenancePage({super.key});
   @override
@@ -368,7 +365,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
             const SizedBox(height: 16),
             const Text('نوع الموبايل', style: TextStyle(fontWeight: FontWeight.bold)),
             Wrap(
-              spacing: 8,
+              spacing: 8.0,
               children: ['ايفون', 'سامسونج', 'شاومي'].map((e) {
                 bool sel = phoneType == e;
                 return ChoiceChip(label: Text(e), selected: sel, selectedColor: const Color(0xFFFF7A00), labelStyle: TextStyle(color: sel ? Colors.white : Colors.black), onSelected: (_) => setState(() => phoneType = e));
@@ -377,7 +374,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
             const SizedBox(height: 14),
             const Text('العطل ايه؟', style: TextStyle(fontWeight: FontWeight.bold)),
             Wrap(
-              spacing: 8,
+              spacing: 8.0,
               children: ['شاشة', 'بطارية', 'سوفت وير', 'سماعة'].map((e) {
                 bool sel = fault == e;
                 return ChoiceChip(label: Text(e), selected: sel, selectedColor: const Color(0xFF00B4A6), labelStyle: TextStyle(color: sel ? Colors.white : Colors.black), onSelected: (_) => setState(() => fault = e));
@@ -390,7 +387,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
             const SizedBox(height: 12),
             TextField(controller: addressC, decoration: const InputDecoration(labelText: 'العنوان - المنطقة - الشارع - رقم المبنى', border: OutlineInputBorder())),
             const SizedBox(height: 12),
-            const Row(children: [Icon(Icons.info, color: Color(0xFFFF7A00), size: 18), SizedBox(width: 6), Text('الفني هيجيلك لحد البيت خلال 60 دقيقة', style: TextStyle(color: Color(0xFFFF7A00)))]),
+            const Row(children: [Icon(Icons.info, color: Color(0xFFFF7A00), size: 18.0), SizedBox(width: 6), Text('الفني هيجيلك لحد البيت خلال 60 دقيقة', style: TextStyle(color: Color(0xFFFF7A00)))]),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
@@ -405,7 +402,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم استلام طلب الصيانة - الفني في الطريق')));
                   nameC.clear(); phoneC.clear(); addressC.clear();
                 },
-                child: const Text('اطلب الصيانة', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                child: const Text('اطلب الصيانة', style: TextStyle(color: Colors.white, fontSize: 18.0, fontWeight: FontWeight.bold)),
               ),
             ),
           ],
@@ -415,7 +412,6 @@ class _MaintenancePageState extends State<MaintenancePage> {
   }
 }
 
-// 4 - المتجر
 class Shop extends StatefulWidget {
   const Shop({super.key});
   @override
@@ -454,8 +450,8 @@ class _Shop extends State<Shop> {
                   const Expanded(child: Text('ابحث عن سماعات, شواحن, كفرات', style: TextStyle(color: Colors.grey))),
                   Container(
                     padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(color: const Color(0xFFFF7A00), borderRadius: BorderRadius.circular(8)),
-                    child: const Icon(Icons.tune, color: Colors.white, size: 18),
+                    decoration: BoxDecoration(color: const Color(0xFFFF7A00), borderRadius: BorderRadius.circular(8.0)),
+                    child: const Icon(Icons.tune, color: Colors.white, size: 18.0),
                   ),
                 ],
               ),
@@ -527,8 +523,8 @@ class _Shop extends State<Shop> {
                             if (img.isNotEmpty) ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.network(img, height: 180, width: double.infinity, fit: BoxFit.cover)),
                             const SizedBox(height: 10),
                             Text(p['desc'] ?? ''),
-                            const SizedBox(height: 10),
-                            Text('${p['price']} جنيه', style: const TextStyle(color: Color(0xFF00B4A6), fontWeight: FontWeight.w900, fontSize: 18)),
+                            const SizedBox(height: 8.0),
+                            Text('${p['price']} جنيه', style: const TextStyle(color: Color(0xFF00B4A6), fontWeight: FontWeight.w900, fontSize: 18.0)),
                           ],
                         ),
                         actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('اغلاق'))],
@@ -558,10 +554,10 @@ class _Shop extends State<Shop> {
                             ),
                             if ((p['tag'] as String).isNotEmpty)
                               Positioned(
-                                top: 8,
-                                left: 8,
+                                top: 8.0,
+                                left: 8.0,
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4),
                                   decoration: BoxDecoration(color: const Color(0xFFFF7A00), borderRadius: BorderRadius.circular(6)),
                                   child: Text(p['tag'], style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                                 ),
@@ -622,7 +618,6 @@ class _Shop extends State<Shop> {
   }
 }
 
-// 5 - المندوب
 class Courier extends StatefulWidget {
   const Courier({super.key});
   @override
@@ -683,7 +678,7 @@ class _Courier extends State<Courier> {
                   color: const Color(0xFFDDE8E5),
                   child: Stack(
                     children: [
-                      Positioned(left: 30, top: 80, right: 30, child: Container(height: 3, color: Colors.white)),
+                      Positioned(left: 30, top: 80.0, right: 30, child: Container(height: 3, color: Colors.white)),
                       Positioned(left: 30, top: 200, right: 30, child: Container(height: 3, color: Colors.white)),
                       Positioned(left: 100, top: 20, bottom: 20, child: Container(width: 3, color: Colors.white)),
                       Positioned(left: 250, top: 20, bottom: 20, child: Container(width: 3, color: Colors.white)),
@@ -691,7 +686,7 @@ class _Courier extends State<Courier> {
                         left: 40,
                         top: 50,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4),
                           decoration: BoxDecoration(color: const Color(0xFFFF7A00), borderRadius: BorderRadius.circular(20)),
                           child: const Row(
                             children: [
@@ -765,7 +760,7 @@ class _Courier extends State<Courier> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(status, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                                  Text(status, style: const TextStyle(fontSize: 18.0, fontWeight: FontWeight.w900)),
                                   Text('علي بعد ${km.toStringAsFixed(1)} كم - يصل خلال $minutes دقائق تقريبا', style: const TextStyle(color: Colors.grey)),
                                 ],
                               ),
@@ -773,7 +768,7 @@ class _Courier extends State<Courier> {
                           ],
                         ),
                         const SizedBox(height: 14),
-                        const Text('تفاصيل الطلب', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                        const Text('تفاصيل الطلب', style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.w900)),
                         const SizedBox(height: 10),
                         detail(Icons.location_on, Colors.teal, 'نقطة الاستلام', 'الاسماعيلية - ابو عطوة - الشارع التجاري'),
                         detail(Icons.location_on, Colors.orange, 'نقطة التسليم', 'الاسماعيلية - ابو عطوة - امام ماركت التوحيد'),
@@ -789,7 +784,7 @@ class _Courier extends State<Courier> {
                               children: [
                                 const Icon(Icons.location_on, color: Colors.white),
                                 const SizedBox(width: 6),
-                                Text(started ? 'جاري التتبع - فاضل $minutes د' : 'تتبع الطلب', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                                Text(started ? 'جاري التتبع - فاضل $minutes د' : 'تتبع الطلب', style: const TextStyle(color: Colors.white, fontSize: 18.0, fontWeight: FontWeight.bold)),
                               ],
                             ),
                           ),
@@ -842,7 +837,7 @@ class DashedLine extends CustomPainter {
       ..strokeWidth = 2;
     double x = 0;
     while (x < size.width) {
-      canvas.drawLine(Offset(x, 0), Offset(x + 8, 0), p);
+      canvas.drawLine(Offset(x, 0), Offset(x + 8.0, 0), p);
       x += 14;
     }
   }
@@ -851,7 +846,6 @@ class DashedLine extends CustomPainter {
   bool shouldRepaint(CustomPainter oldDelegate) => false;
 }
 
-// 6 - الدفع
 class Checkout extends StatefulWidget {
   const Checkout({super.key});
   @override
@@ -1056,7 +1050,6 @@ class _Checkout extends State<Checkout> {
   }
 }
 
-// 7 - طلباتي
 class MyOrders extends StatelessWidget {
   const MyOrders({super.key});
   @override
@@ -1111,7 +1104,6 @@ class MyOrders extends StatelessWidget {
   }
 }
 
-// 8 - الادمن - مستخبي
 class AdminPage extends StatelessWidget {
   const AdminPage({super.key});
   @override
@@ -1132,7 +1124,7 @@ class AdminPage extends StatelessWidget {
                   onPressed: () {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AddProductPage()));
                   },
-                  child: const Text('اضافة منتج جديد +', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  child: const Text('اضافة منتج جديد +', style: TextStyle(color: Colors.white, fontSize: 18.0, fontWeight: FontWeight.bold)),
                 ),
               ),
               const SizedBox(height: 12),
@@ -1158,10 +1150,10 @@ class AdminPage extends StatelessWidget {
                             Text('${x['items']}'),
                             Text('الاسم: ${x['name']} - ${x['phone']}'),
                             Text('العنوان: ${x['address']} - ${x['pay']}'),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 8.0),
                             Row(children: [
-                              Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00B4A6)), onPressed: () => Store.i.setStatus(i, 'تم'), child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.check, color: Colors.white, size: 18), SizedBox(width: 4), Text('تم', style: TextStyle(color: Colors.white))]))),
-                              const SizedBox(width: 12),
+                              Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00B4A6)), onPressed: () => Store.i.setStatus(i, 'تم'), child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.check, color: Colors.white, size: 18.0), SizedBox(width: 4), Text('تم', style: TextStyle(color: Colors.white))]))),
+                              const SizedBox(width: 8.0),
                               Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF7A00)), onPressed: () => Store.i.setStatus(i, 'جاري الصيانة'), child: const Text('جاري الصيانة', style: TextStyle(color: Colors.white)))),
                             ]),
                           ],
@@ -1178,7 +1170,6 @@ class AdminPage extends StatelessWidget {
   }
 }
 
-// 9 - اضافة منتج جديد
 class AddProductPage extends StatefulWidget {
   const AddProductPage({super.key});
   @override
@@ -1209,7 +1200,7 @@ class _AddProductPageState extends State<AddProductPage> {
             const SizedBox(height: 12),
             const Text('التصنيف', style: TextStyle(fontWeight: FontWeight.bold)),
             Wrap(
-              spacing: 8,
+              spacing: 8.0,
               children: ['سماعات', 'شواحن', 'كفرات', 'كابلات', 'صيانة'].map((e) {
                 bool sel = cat == e;
                 return ChoiceChip(label: Text(e), selected: sel, selectedColor: const Color(0xFF00B4A6), labelStyle: TextStyle(color: sel ? Colors.white : Colors.black), onSelected: (_) => setState(() => cat = e));
@@ -1217,11 +1208,11 @@ class _AddProductPageState extends State<AddProductPage> {
             ),
             const SizedBox(height: 12),
             const Text('وصف المنتج بالتفاصيل', style: TextStyle(fontWeight: FontWeight.bold)),
-            TextField(controller: descC, maxLines: 3, decoration: const InputDecoration(hintText: 'اكتب مواصفات المنتج هنا...', border: OutlineInputBorder())),
+            TextField(controller: descC, maxLines: 3, decoration: const InputDecoration(hintText: 'اكتب مواصفات المنتج هنا', border: OutlineInputBorder())),
             const SizedBox(height: 12),
             const Text('لينك صورة المنتج', style: TextStyle(fontWeight: FontWeight.bold)),
             TextField(controller: imgC, decoration: const InputDecoration(hintText: 'انسخ لينك الصورة من جوجل وحطه هنا', border: OutlineInputBorder())),
-            const SizedBox(height: 8),
+            const SizedBox(height: 8.0),
             const Text('لو مش عندك لينك، سيبه فاضي وهيظهر ايقونة مكان الصورة', style: TextStyle(color: Colors.grey, fontSize: 12)),
             const SizedBox(height: 20),
             SizedBox(
@@ -1246,7 +1237,7 @@ class _AddProductPageState extends State<AddProductPage> {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم اضافة المنتج في المتجر')));
                 },
-                child: const Text('حفظ المنتج', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                child: const Text('حفظ المنتج', style: TextStyle(color: Colors.white, fontSize: 18.0, fontWeight: FontWeight.bold)),
               ),
             ),
           ],
