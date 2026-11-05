@@ -1,286 +1,891 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:convert';
-import 'package:url_launcher/url_launcher.dart';
-import 'firebase_options.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  try { await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform); } catch(e){}
-  runApp(const MyApp());
+void main() {
+  runApp(const OdayApp());
 }
 
-// الوان الصور بالظبط
-const Color tealC = Color(0xFF00B4A6);
-const Color orangeC = Color(0xFFFF8A00);
-const String adminPass = 'Oday123';
-const String waNumber = '201069068091';
-String userName = '';
-List<Map<String,dynamic>> cart = [];
+class Store extends ChangeNotifier {
+  static final Store i = Store._();
+  Store._();
+  List<Map> orders = [];
+  List<Map> cart = [];
 
-class MyApp extends StatelessWidget { const MyApp({super.key});
-  @override Widget build(BuildContext context) {
-    return MaterialApp(debugShowCheckedModeBanner: false, theme: ThemeData(fontFamily: 'Cairo', primaryColor: tealC, scaffoldBackgroundColor: Colors.white, appBarTheme: const AppBarTheme(backgroundColor: tealC, foregroundColor: Colors.white)),
-      home: const MainShell());
+  void addCart(Map m) {
+    cart.add(m);
+    notifyListeners();
+  }
+
+  void addOrder(Map o) {
+    orders.insert(0, o);
+    cart.clear();
+    notifyListeners();
+  }
+
+  void setStatus(int idx, String s) {
+    orders[idx]['status'] = s;
+    notifyListeners();
   }
 }
 
-// ============ الشيل الرئيسي + Bottom Bar ============
-class MainShell extends StatefulWidget { const MainShell({super.key}); @override State<MainShell> createState() => _MainShellState(); }
-class _MainShellState extends State<MainShell> {
-  int idx = 0;
-  @override void initState(){ super.initState(); WidgetsBinding.instance.addPostFrameCallback((_)=> askName()); }
-  Future<void> askName() async {
-    if(userName.isNotEmpty) return;
-    final c = TextEditingController();
-    showDialog(barrierDismissible: false, context: context, builder: (ctx)=>AlertDialog(
-      title: const Text('أهلاً بيك في Oday Phone'),
-      content: TextField(controller: c, decoration: const InputDecoration(labelText: 'اسمك ايه؟', hintText: 'مثال: أحمد')),
-      actions: [ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: orangeC), onPressed: (){ if(c.text.trim().isNotEmpty){ setState(()=> userName = c.text.trim()); Navigator.pop(ctx); } }, child: const Text('دخول', style: TextStyle(color: Colors.white)))],
-    ));
-  }
-  @override Widget build(BuildContext context){
-    final pages = [const NewHome(), const StorePage(), const CourierPage(), const CheckoutPage(), const ContactPage()];
-    return Scaffold(
-      body: pages[idx],
-      bottomNavigationBar: BottomNavigationBar(currentIndex: idx, onTap: (v)=>setState(()=>idx=v), type: BottomNavigationBarType.fixed, selectedItemColor: tealC, unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'الرئيسية'),
-          BottomNavigationBarItem(icon: Icon(Icons.grid_view), label: 'الخدمات'),
-          BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'الطلبات'),
-          BottomNavigationBarItem(icon: Icon(Icons.wallet), label: 'المحفظة'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'حسابي'),
-        ]),
+class OdayApp extends StatelessWidget {
+  const OdayApp({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: Store.i,
+      builder: (, _) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'Oday Phone',
+          theme: ThemeData(
+            primaryColor: const Color(0xFF00B4A6),
+            scaffoldBackgroundColor: Colors.white,
+          ),
+          home: const Home(),
+        );
+      },
     );
   }
 }
 
-Future<void> showOrderDialog(BuildContext context, String type) async {
-  final n=TextEditingController(text: userName), p=TextEditingController(), a=TextEditingController(), d=TextEditingController();
-  showDialog(context: context, builder: (ctx) => AlertDialog(
-    title: Text(type), content: SingleChildScrollView(child: Column(children: [
-      TextField(controller: n, decoration: const InputDecoration(labelText: 'الاسم')),
-      TextField(controller: p, decoration: const InputDecoration(labelText: 'رقم التليفون'), keyboardType: TextInputType.phone),
-      TextField(controller: a, decoration: const InputDecoration(labelText: 'العنوان')),
-      TextField(controller: d, decoration: InputDecoration(labelText: type.contains('صيانة')?'نوع العطل':'عايز ايه من المندوب؟'), maxLines: 3),
-    ])),
-    actions: [ TextButton(onPressed: ()=>Navigator.pop(ctx), child: const Text('الغاء')),
-      ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: orangeC), onPressed: () async {
-        if(n.text.isEmpty||p.text.isEmpty) return;
-        await FirebaseFirestore.instance.collection('orders').add({'type':type,'name':n.text,'phone'text,'address':a.text,'details':d.text,'time':DateTime.now(),'status':'قيد المراجعة'});
-        Navigator.pop(ctx); ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تم ارسال $type ✅')));
-      }, child: const Text('ارسال', style: TextStyle(color: Colors.white)))],
-  ));
+class Home extends StatefulWidget {
+  const Home({super.key});
+  @override
+  State<Home> createState() => _Home();
 }
 
-Future<void> checkAdminOrders(BuildContext context) async {
-  final c = TextEditingController();
-  showDialog(context: context, builder: (ctx) => AlertDialog(
-    title: const Text('دخول الادمن فقط'), content: TextField(controller: c, obscureText: true, decoration: const InputDecoration(hintText: 'الباسورد')),
-    actions: [ElevatedButton(onPressed: (){
-      if(c.text==adminPass){ Navigator.pop(ctx); Navigator.push(context, MaterialPageRoute(builder: (_)=>const OrdersPage())); }
-      else { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('باسورد غلط'))); }
-    }, child: const Text('دخول'))],
-  ));
-}
+class _Home extends State<Home> {
+  int idx = 0;
+  final teal = const Color(0xFF00B4A6);
+  final orange = const Color(0xFFFF7A00);
 
-// ============ 1 - الرئيسية زي الصورة 1 ============
-class NewHome extends StatelessWidget { const NewHome({super.key});
-  @override Widget build(BuildContext context){
-    return SafeArea(child: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Padding(padding: const EdgeInsets.all(16), child: Row(children: [
-        const CircleAvatar(radius: 26, backgroundColor: tealC, child: Icon(Icons.person, color: Colors.white)),
-        const SizedBox(width: 10),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('أهلاً بيك يا ${userName.isEmpty ? 'عدي' : userName}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          const Text('كيف نقدر نساعدك اليوم؟', style: TextStyle(color: Colors.grey)),
-        ])),
-        IconButton(icon: const Icon(Icons.notifications, color: tealC), onPressed: ()=>checkAdminOrders(context)),
-      ])),
-      Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: TextField(decoration: InputDecoration(hintText: 'ابحث عن خدمة صيانة...', prefixIcon: const Icon(Icons.search, color: tealC), suffixIcon: const Icon(Icons.tune), filled: true, fillColor: Colors.grey[100], border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)))),
-      const SizedBox(height: 16),
-      Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Row(children: [
-        Expanded(child: _box(Icons.home_repair_service, 'صيانة من المنزل', tealC, ()=>showOrderDialog(context, 'صيانة من المنزل'))),
-        const SizedBox(width: 😎,
-        Expanded(child: box(Icons.shopping_bag, 'متجر اكسسوارات', orangeC, ()=>Navigator.push(context, MaterialPageRoute(builder: ()=>const StorePage())))),
-        const SizedBox(width: 😎,
-        Expanded(child: _box(Icons.delivery_dining, 'اطلب مندوب', tealC, ()=>showOrderDialog(context, 'طلب مندوب'))),
-        const SizedBox(width: 😎,
-        Expanded(child: box(Icons.payment, 'الدفع', orangeC, ()=>Navigator.push(context, MaterialPageRoute(builder: ()=>const CheckoutPage())))),
-      ])),
-      const SizedBox(height: 20),
-      const Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('خدمات سريعة', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
-      const SizedBox(height: 10),
-      Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Row(children: [
-        Expanded(child: _quick(Icons.plumbing, 'سباك', ()=>showOrderDialog(context, 'سباك'))),
-        const SizedBox(width: 😎,
-        Expanded(child: _quick(Icons.electrical_services, 'كهربائي', ()=>showOrderDialog(context, 'كهربائي'))),
-        const SizedBox(width: 😎,
-        Expanded(child: _quick(Icons.ac_unit, 'صيانة مكيفات', ()=>showOrderDialog(context, 'صيانة مكيفات'))),
-      ])),
-      const SizedBox(height: 20),
-      Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        const Text('عروض اليوم 🔥', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        TextButton(onPressed: ()=>Navigator.push(context, MaterialPageRoute(builder: (_)=>const OffersPage())), child: const Text('عرض الكل')),
-      ])),
-      SizedBox(height: 140, child: StreamBuilder<QuerySnapshot>(stream: FirebaseFirestore.instance.collection('offers').orderBy('time', descending: true).limit(5).snapshots(), builder: (context, snap){
-        if(!snap.hasData || snap.data!.docs.isEmpty) return const Center(child: Text('لا يوجد عروض حالياً'));
-        return ListView(scrollDirection: Axis.horizontal, children: snap.data!.docs.map((d){ final data=d.data() as Map<String,dynamic>; return GestureDetector(onTap: ()=>Navigator.push(context, MaterialPageRoute(builder: (_)=>const OffersPage())), child: Container(width: 200, margin: const EdgeInsets.only(left: 12), decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: Colors.grey[100]), child: Column(children: [Expanded(child: data['image']!=null ? ClipRRect(borderRadius: const BorderRadius.vertical(top: Radius.circular(12)), child: Image.memory(base64Decode(data['image']), fit: BoxFit.cover, width: double.infinity)) : const Icon(Icons.local_offer)), Padding(padding: const EdgeInsets.all(😎, child: Text('${data['title']} - ${data['price']} ج', style: const TextStyle(fontWeight: FontWeight.bold)))]))); }).toList());
-      })),
-      Padding(padding: const EdgeInsets.all(16), child: Row(children: [
-        Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: orangeC, minimumSize: const Size(0,55)), onPressed: ()=>Navigator.push(context, MaterialPageRoute(builder: (_)=>const UsedPhonesPage())), child: const Text('موبايلات مستعملة', style: TextStyle(color: Colors.white)))),
-        const SizedBox(width: 😎,
-        Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: tealC, minimumSize: const Size(0,55)), onPressed: ()=>Navigator.push(context, MaterialPageRoute(builder: (_)=>const TrackOrderPage())), child: const Text('تتبع طلبي', style: TextStyle(color: Colors.white)))),
-      ])),
-      Container(width: double.infinity, color: Colors.black87, padding: const EdgeInsets.all(12), child: const Text('الإسماعيلية - Oday Phone - 01069068091', textAlign: TextAlign.center, style: TextStyle(color: Colors.white))),
-    ])));
+  @override
+  Widget build(BuildContext context) {
+    List<Widget> pages = [
+      homeBody(),
+      const Shop(),
+      const Courier(),
+      const Checkout(),
+      const MyOrders(),
+    ];
+    return Scaffold(
+      body: pages[idx],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: idx,
+        selectedItemColor: teal,
+        unselectedItemColor: Colors.grey,
+        type: BottomNavigationBarType.fixed,
+        onTap: (v) => setState(() => idx = v),
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'الرئيسية'),
+          BottomNavigationBarItem(icon: Icon(Icons.store), label: 'المتجر'),
+          BottomNavigationBarItem(icon: Icon(Icons.delivery_dining), label: 'المندوب'),
+          BottomNavigationBarItem(icon: Icon(Icons.payment), label: 'الدفع'),
+          BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'طلباتي'),
+        ],
+      ),
+    );
   }
-  Widget _box(IconData icon, String title, Color c, VoidCallback onTap) => GestureDetector(onTap: onTap, child: Container(height: 92, decoration: BoxDecoration(color: c.withOpacity(0.12), borderRadius: BorderRadius.circular(12)), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(icon, color: c, size: 30), const SizedBox(height: 6), Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold))])));
-  Widget _quick(IconData icon, String title, VoidCallback onTap) => GestureDetector(onTap: onTap, child: Container(padding: const EdgeInsets.symmetric(vertical: 14), decoration: BoxDecoration(color: Colors.white, border: Border.all(color: Colors.grey.shade200), borderRadius: BorderRadius.circular(12)), child: Column(children: [Icon(icon, color: tealC), const SizedBox(height: 6), Text(title, style: const TextStyle(fontWeight: FontWeight.bold))])));
 
-}
+  Widget homeBody() {
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('اهلا بيك يا عدي', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+                      Text('كيف نقدر نساعدك اليوم؟', style: TextStyle(color: Colors.grey, fontSize: 15)),
+                    ],
+                  ),
+                ),
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: teal.withOpacity(0.15),
+                  child: Icon(Icons.person, color: teal, size: 30),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(14)),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Row(
+                children: [
+                  Icon(Icons.search, color: teal, size: 26),
+                  const SizedBox(width: 😎,
+                  const Expanded(child: Text('ابحث عن خدمة صيانة', style: TextStyle(color: Colors.grey))),
+                  Icon(Icons.tune, color: orange),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('الخدمات', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+                Text('عرض الكل', style: TextStyle(color: orange, fontWeight: FontWeight.bold, fontSize: 16)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                serviceBox(teal, Icons.build, 'صيانة من المنزل', () => setState(() => idx = 1)),
+                serviceBox(orange, Icons.shopping_bag, 'متجر اكسسوارات', () => setState(() => idx = 1)),
+                serviceBox(teal, Icons.delivery_dining, 'اطلب مندوب', () => setState(() => idx = 2)),
+                serviceBox(orange, Icons.credit_card, 'الدفع', () => setState(() => idx = 3)),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('خدمات سريعة', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+                Text('المزيد', style: TextStyle(color: orange, fontWeight: FontWeight.bold, fontSize: 16)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            quickCard(Icons.build, 'سباك', 'تسريب - تركيب - صيانة - يبدأ من 50 جنيه', teal),
+            quickCard(Icons.electrical_services, 'كهربائي', 'اعمال - تركيب - فحص - يبدأ من 70 جنيه', orange),
+            quickCard(Icons.ac_unit, 'صيانة مكيفات', 'تنظيف - تعبئة غاز - اصلاح - يبدأ من 120 جنيه', teal),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(color: const Color(0xFFF6F8F8), borderRadius: BorderRadius.circular(14)),
+              child: const Row(
+                children: [
+                  Icon(Icons.location_on, color: Color(0xFF00B4A6)),
+                  SizedBox(width: 😎,
+                  Expanded(child: Text('الاسماعيلية - ابو عطوة - الشارع التجاري - امام ماركت التوحيد', style: TextStyle(fontWeight: FontWeight.bold))),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-// ============ 2 - المتجر زي الصورة 3 ============
-class StorePage extends StatefulWidget { const StorePage({super.key}); @override State<StorePage> createState() => _StorePageState(); }
-class _StorePageState extends State<StorePage> {
-  bool isAdmin=false; String search=''; String filter='الكل';
-  Future<void> checkAdmin() async { final c=TextEditingController(); showDialog(context: context, builder: (ctx)=>AlertDialog(title: const Text('ادمن'), content: TextField(controller: c, obscureText: true), actions: [ElevatedButton(onPressed: (){ if(c.text==adminPass){ setState(()=>isAdmin=true); Navigator.pop(ctx);} }, child: const Text('دخول'))])); }
-  Future<void> showProductDetail(Map<String,dynamic> data) async {
-    final nameCtrl=TextEditingController(text: userName); final phoneCtrl=TextEditingController(); final addressCtrl=TextEditingController();
-    showDialog(context: context, builder: (ctx)=>AlertDialog(contentPadding: EdgeInsets.zero, content: SingleChildScrollView(child: Column(children: [
-      if(data['imageBase64']!=null) Image.memory(base64Decode(data['imageBase64']), height: 250, width: double.infinity, fit: BoxFit.fill),
-      Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(data['name']??'', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-        Text('${data['price']} جنيه', style: const TextStyle(fontSize: 18, color: tealC, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 😎, const Text('المواصفات:', style: TextStyle(fontWeight: FontWeight.bold)), Text(data['desc']??'لا يوجد وصف'),
-        const Divider(), TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'اسمك')), TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: 'رقمك'), keyboardType: TextInputType.phone), TextField(controller: addressCtrl, decoration: const InputDecoration(labelText: 'عنوانك')),
-      ])),
-    ])), actions: [TextButton(onPressed: ()=>Navigator.pop(ctx), child: const Text('الغاء')), ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Colors.green), icon: const Icon(Icons.chat, color: Colors.white), label: const Text('شراء الآن واتساب', style: TextStyle(color: Colors.white)), onPressed: () async {
-      if(nameCtrl.text.isEmpty || phoneCtrl.text.isEmpty) return;
-      await FirebaseFirestore.instance.collection('orders').add({'type':'شراء منتج - ${data['name']}','name':nameCtrl.text,'phone':phoneCtrl.text,'address':addressCtrl.text,'details':'المنتج: ${data['name']} - السعر: ${data['price']} - ${data['desc']}','time':DateTime.now(),'status':'قيد المراجعة'});
-      Navigator.pop(ctx);
-      String msg = "سلام عليكم Oday Phone%0Aعايز اشتري:%0A📱 *${data['name']}*%0A💰 ${data['price']} جنيه%0A👤 ${nameCtrl.text}%0A📞 ${phoneCtrl.text}%0A📍 ${addressCtrl.text}";
-      final uri = Uri.parse('https://wa.me/$waNumber?text=$msg');
-      if(await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
-    })]));
+  Widget serviceBox(Color c, IconData ic, String t, VoidCallback onTap) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        child: Column(
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(14)),
+              child: Icon(ic, color: Colors.white, size: 30),
+            ),
+            const SizedBox(height: 6),
+            Text(t, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+    );
   }
-  Future<void> addProduct() async { final n=TextEditingController(), pr=TextEditingController(), d=TextEditingController(), cat=TextEditingController(text: 'سماعات'); String? img; final picker=ImagePicker();
-    showDialog(context: context, builder: (ctx)=>StatefulBuilder(builder: (ctx2, setSt)=>AlertDialog(title: const Text('منتج جديد'), content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
-      GestureDetector(onTap: () async { final x=await picker.pickImage(source: ImageSource.gallery, imageQuality: 50); if(x!=null){ final b=await x.readAsBytes(); setSt(()=>img=base64Encode(b)); } }, child: Container(height: 120, color: Colors.grey[300], child: img!=null?Image.memory(base64Decode(img!)):const Icon(Icons.add_a_photo))),
-      TextField(controller: n, decoration: const InputDecoration(labelText: 'اسم المنتج')), TextField(controller: pr, decoration: const InputDecoration(labelText: 'السعر')), TextField(controller: cat, decoration: const InputDecoration(labelText: 'التصنيف: سماعات / شواحن / كفرات / كابلات')), TextField(controller: d, decoration: const InputDecoration(labelText: 'المواصفات'), maxLines: 3),
-    ])), actions: [ElevatedButton(onPressed: () async { if(n.text.isEmpty||img==null) return; await FirebaseFirestore.instance.collection('products').add({'name':n.text,'price':pr.text,'desc':d.text,'category':cat.text,'imageBase64':img,'time':DateTime.now()}); Navigator.pop(ctx); }, child: const Text('حفظ'))])));
-  }
-  @override Widget build(BuildContext context) {
-    final filters = ['الكل','سماعات','شواحن','كفرات','كابلات'];
-    return Scaffold(appBar: AppBar(title: const Text('متجر الإكسسوارات'), actions: [Stack(children: [IconButton(icon: const Icon(Icons.shopping_cart), onPressed: ()=>Navigator.push(context, MaterialPageRoute(builder: (_)=>const CheckoutPage()))), if(cart.isNotEmpty) Positioned(right: 6, top: 6, child: CircleAvatar(radius: 9, backgroundColor: orangeC, child: Text('${cart.length}', style: const TextStyle(fontSize: 10, color: Colors.white))))]), if(!isAdmin) IconButton(icon: const Icon(Icons.lock), onPressed: checkAdmin), if(isAdmin) IconButton(icon: const Icon(Icons.add), onPressed: addProduct)]),
-      body: Column(children: [
-        Padding(padding: const EdgeInsets.all(12), child: TextField(onChanged: (v)=>setState(()=>search=v), decoration: InputDecoration(hintText: 'ابحث عن منتج...', prefixIcon: const Icon(Icons.search, color: tealC), filled: true, fillColor: Colors.grey[100], border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)))),
-        SizedBox(height: 40, child: ListView(scrollDirection: Axis.horizontal, children: filters.map((f)=>Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: ChoiceChip(label: Text(f), selected: filter==f, selectedColor: tealC, labelStyle: TextStyle(color: filter==f?Colors.white:Colors.black), onSelected: (_)=>setState(()=>filter=f)))).toList())),
-        Expanded(child: StreamBuilder<QuerySnapshot>(stream: FirebaseFirestore.instance.collection('products').orderBy('time', descending: true).snapshots(), builder: (context, snap){ if(!snap.hasData) return const Center(child: CircularProgressIndicator());
-          var docs = snap.data!.docs.where((d){ final data=d.data() as Map<String,dynamic>; final name=(data['name']??'').toString(); final cat=(data['category']??'سماعات').toString(); if(search.isNotEmpty && !name.contains(search)) return false; if(filter!='الكل' && cat!=filter) return false; return true; }).toList();
-          if(docs.isEmpty) return const Center(child: Text('لا يوجد منتجات في التصنيف ده'));
-          return GridView.count(crossAxisCount: 2, childAspectRatio: 0.72, children: docs.map((d){ final data=d.data() as Map<String,dynamic>; return GestureDetector(onTap: ()=>showProductDetail(data), child: Card(child: Column(children: [
-            Expanded(child: data['imageBase64']!=null?Image.memory(base64Decode(data['imageBase64']), fit: BoxFit.cover, width: double.infinity):const Icon(Icons.image)),
-            Padding(padding: const EdgeInsets.all(4), child: Text(data['name']??'', style: const TextStyle(fontWeight: FontWeight.bold), maxLines: 1)),
-            Row(mainAxisAlignment: MainAxisAlignment.center, children: [const Icon(Icons.star, color: Colors.amber, size: 14), const Text('4.8', style: TextStyle(fontSize: 12))]),
-            Text('${data['price']} جنيه', style: const TextStyle(color: tealC, fontWeight: FontWeight.bold)),
-            Padding(padding: const EdgeInsets.all(6), child: SizedBox(width: double.infinity, child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: orangeC), onPressed: (){ setState(()=>cart.add(data)); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تمت الإضافة للسلة ✅'))); }, child: const Text('إضافة للسلة', style: TextStyle(color: Colors.white, fontSize: 12))))),
-            if(isAdmin) IconButton(icon: const Icon(Icons.delete, color: Colors.red, size: 20), onPressed: ()=>d.reference.delete())
-          ]))); }).toList());
-        })),
-      ]));
-  }
-}
 
-// ============ 3 - المندوب زي الصورة 2 ============
-class CourierPage extends StatelessWidget { const CourierPage({super.key});
-  @override Widget build(BuildContext context){
-    return Scaffold(appBar: AppBar(title: const Text('اطلب مندوب')), body: ListView(padding: const EdgeInsets.all(16), children: [
-      Container(height: 200, decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(16)), child: const Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.map, size: 60, color: tealC), Text('الخريطة - الإسماعيلية', style: TextStyle(fontWeight: FontWeight.bold)), Text('المندوب في الطريق إليك 🚴')])),
-      const SizedBox(height: 16),
-      const Card(child: ListTile(leading: CircleAvatar(backgroundColor: tealC, child: Icon(Icons.delivery_dining, color: Colors.white)), title: Text('المندوب في الطريق إليك'), subtitle: Text('أحمد - مندوب Oday Phone - 5 دقائق'))),
-      const SizedBox(height: 12),
-      const Text('نقطة الاستلام', style: TextStyle(fontWeight: FontWeight.bold)), const SizedBox(height: 6),
-      const TextField(decoration: InputDecoration(hintText: 'عنوانك - منين نستلم؟', border: OutlineInputBorder())),
-      const SizedBox(height: 12),
-      const Text('نقطة التسليم', style: TextStyle(fontWeight: FontWeight.bold)), const SizedBox(height: 6),
-      const TextField(decoration: InputDecoration(hintText: 'هنوصله فين؟', border: OutlineInputBorder())),
-      const SizedBox(height: 12),
-      const TextField(decoration: InputDecoration(labelText: 'ملاحظات للمندوب'), maxLines: 2),
-      const SizedBox(height: 20),
-      SizedBox(width: double.infinity, height: 55, child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: orangeC), onPressed: ()=>showOrderDialog(context, 'طلب مندوب'), child: const Text('اطلب مندوب الآن', style: TextStyle(color: Colors.white, fontSize: 18)))),
-      const SizedBox(height: 10),
-      SizedBox(width: double.infinity, height: 55, child: OutlinedButton(onPressed: ()=>Navigator.push(context, MaterialPageRoute(builder: (_)=>const TrackOrderPage())), child: const Text('تتبع الطلب'))),
-    ]));
-  }
-}
-
-// ============ 4 - الدفع زي الصورة 4 ============
-class CheckoutPage extends StatefulWidget { const CheckoutPage({super.key}); @override State<CheckoutPage> createState() => _CheckoutPageState(); }
-class _CheckoutPageState extends State<CheckoutPage> {
-  String pay='فودافون كاش'; final codeCtrl=TextEditingController();
-  @override Widget build(BuildContext context){
-    double total = 0; for(var c in cart){ total += double.tryParse('${c['price']}') ?? 0; }
-    double discount = codeCtrl.text=='ODAY10' ? total*0.1 : 0;
-    return Scaffold(appBar: AppBar(title: const Text('الدفع والخروج')), body: ListView(padding: const EdgeInsets.all(16), children: [
-      const Text('طرق الدفع', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)), const SizedBox(height: 10),
-      ...['فودافون كاش','فوري','بطاقة فيزا','الدفع عند الاستلام'].map((m)=>Card(child: RadioListTile(value: m, groupValue: pay, onChanged: (v)=>setState(()=>pay=v!), title: Text(m), subtitle: Text(m=='فودافون كاش'?'محفظة فودافون كاش - 9#': m=='فوري'?'الدفع عبر فوري': m=='بطاقة فيزا'?'Visa *** 4532':'رسوم إضافية 20 ج عند التسليم')))),
-      const SizedBox(height: 16), const Text('ملخص الطلب', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-      ...cart.map((c)=>ListTile(title: Text(c['name']??''), trailing: Text('${c['price']} ج'))),
-      if(cart.isEmpty) const Text('السلة فاضية - اضف من المتجر'),
-      const SizedBox(height: 10),
-      Row(children: [Expanded(child: TextField(controller: codeCtrl, decoration: const InputDecoration(hintText: 'كود خصم - جرب ODAY10'))), const SizedBox(width: 😎, ElevatedButton(onPressed: ()=>setState((){}), child: const Text('تطبيق'))]),
-      const SizedBox(height: 12),
-      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('الإجمالي'), Text('${total - discount} ج', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18))]),
-      const SizedBox(height: 20),
-      SizedBox(width: double.infinity, height: 55, child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: orangeC), onPressed: () async {
-        await FirebaseFirestore.instance.collection('orders').add({'type':'طلب دفع - $pay','name':userName,'phone':'','address':'','details':'السلة: ${cart.map((e)=>e['name']).join(', ')} - الاجمالي: ${total-discount} - الدفع: $pay','time':DateTime.now(),'status':'قيد المراجعة'});
-        String msg = "طلب دفع%0A💳 $pay%0A💰 ${total-discount} ج%0A👤 $userName";
-        final uri = Uri.parse('https://wa.me/$waNumber?text=$msg'); if(await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم ارسال الطلب ✅')));
-      }, child: const Text('ادفع الآن', style: TextStyle(color: Colors.white, fontSize: 18)))),
-    ]));
+  Widget quickCard(IconData ic, String t, String sub, Color c) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10)],
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(radius: 28, backgroundColor: c.withOpacity(0.15), child: Icon(ic, color: c, size: 28)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(t, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                Text(sub, style: const TextStyle(color: Colors.grey)),
+              ],
+            ),
+          ),
+          Icon(Icons.arrow_forward_ios, color: orange, size: 18),
+        ],
+      ),
+    );
   }
 }
 
-// ============ الصفحات القديمة المحفوظة ============
-class OrdersPage extends StatelessWidget { const OrdersPage({super.key});
-  @override Widget build(BuildContext context) { return Scaffold(appBar: AppBar(title: const Text('كل الطلبات')), body: StreamBuilder<QuerySnapshot>(stream: FirebaseFirestore.instance.collection('orders').orderBy('time', descending: true).snapshots(), builder: (context, snap){ if(!snap.hasData) return const Center(child: CircularProgressIndicator()); return ListView(children: snap.data!.docs.map((d){ final data = d.data() as Map<String,dynamic>; return Card(margin: const EdgeInsets.all(😎, child: ListTile(title: Text('${data['type']} - ${data['name']} - ${data['status']}', style: const TextStyle(fontWeight: FontWeight.bold)), subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('📞 ${data['phone']}'), Text('📍 ${data['address']}'), Text('📝 ${data['details']}')]), trailing: PopupMenuButton(onSelected: (v){ d.reference.update({'status': v}); }, itemBuilder: (_)=>[const PopupMenuItem(value: 'قيد المراجعة', child: Text('قيد المراجعة')), const PopupMenuItem(value: 'جاري التوصيل', child: Text('جاري التوصيل')), const PopupMenuItem(value: 'تم التوصيل', child: Text('تم التوصيل')), const PopupMenuItem(value: 'تم الالغاء', child: Text('الغاء'))], child: const Icon(Icons.more_vert)), isThreeLine: true)); }).toList()); })); }
+class Shop extends StatefulWidget {
+  const Shop({super.key});
+  @override
+  State<Shop> createState() => _Shop();
 }
 
-class OffersPage extends StatefulWidget { const OffersPage({super.key}); @override State<OffersPage> createState() => _OffersPageState(); }
-class _OffersPageState extends State<OffersPage> {
-  bool isAdmin=false;
-  Future<void> checkAdmin() async { final c=TextEditingController(); showDialog(context: context, builder: (ctx)=>AlertDialog(title: const Text('ادمن'), content: TextField(controller: c, obscureText: true), actions: [ElevatedButton(onPressed: (){ if(c.text==adminPass){ setState(()=>isAdmin=true); Navigator.pop(ctx);} }, child: const Text('دخول'))])); }
-  Future<void> showDetailAndBuy(Map<String,dynamic> data) async { final n=TextEditingController(text: userName), p=TextEditingController(), a=TextEditingController(); showDialog(context: context, builder: (ctx)=>AlertDialog(contentPadding: EdgeInsets.zero, content: SingleChildScrollView(child: Column(children: [if(data['image']!=null) Image.memory(base64Decode(data['image']), height: 250, width: double.infinity, fit: BoxFit.fill), Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(data['title']??'', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)), Text('${data['price']} جنيه', style: const TextStyle(fontSize: 18, color: Colors.red, fontWeight: FontWeight.bold)), const Divider(), TextField(controller: n, decoration: const InputDecoration(labelText: 'اسمك')), TextField(controller: p, decoration: const InputDecoration(labelText: 'رقمك'), keyboardType: TextInputType.phone), TextField(controller: a, decoration: const InputDecoration(labelText: 'عنوانك'))]))])), actions: [TextButton(onPressed: ()=>Navigator.pop(ctx), child: const Text('الغاء')), ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Colors.green), icon: const Icon(Icons.chat, color: Colors.white), label: const Text('شراء واتساب', style: TextStyle(color: Colors.white)), onPressed: () async { if(n.text.isEmpty||p.text.isEmpty) return; await FirebaseFirestore.instance.collection('orders').add({'type':'عرض - ${data['title']}', 'name':n.text, 'phone'😛.text, 'address':a.text, 'details':'العرض: ${data['title']} - ${data['price']}', 'time':DateTime.now(), 'status':'قيد المراجعة'}); Navigator.pop(ctx); String msg = "عايز العرض ده%0A📱 *${data['title']}*%0A💰 ${data['price']} جنيه%0A👤 ${n.text}%0A📞 ${p.text}%0A📍 ${a.text}"; final uri=Uri.parse('https://wa.me/$waNumber?text=$msg'); if(await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication); })])); }
-  Future<void> addOffer() async { final t=TextEditingController(), pr=TextEditingController(); String? img; final picker=ImagePicker(); showDialog(context: context, builder: (ctx)=>StatefulBuilder(builder: (ctx2, setSt)=>AlertDialog(title: const Text('عرض جديد'), content: Column(mainAxisSize: MainAxisSize.min, children: [GestureDetector(onTap: () async { final x=await picker.pickImage(source: ImageSource.gallery, imageQuality: 50); if(x!=null){ final b=await x.readAsBytes(); setSt(()=>img=base64Encode(b)); } }, child: Container(height: 120, color: Colors.grey[300], child: img!=null?Image.memory(base64Decode(img!)):const Icon(Icons.add_a_photo))), TextField(controller: t, decoration: const InputDecoration(labelText: 'اسم العرض')), TextField(controller: pr, decoration: const InputDecoration(labelText: 'السعر بعد الخصم'))]), actions: [ElevatedButton(onPressed: () async { await FirebaseFirestore.instance.collection('offers').add({'title':t.text,'price':pr.text,'image':img,'time':DateTime.now()}); Navigator.pop(ctx); }, child: const Text('حفظ'))]))); }
-  @override Widget build(BuildContext context) { return Scaffold(appBar: AppBar(title: const Text('عروض اليوم 🔥'), actions: [if(!isAdmin) IconButton(icon: const Icon(Icons.lock), onPressed: checkAdmin), if(isAdmin) IconButton(icon: const Icon(Icons.add), onPressed: addOffer)]), body: StreamBuilder<QuerySnapshot>(stream: FirebaseFirestore.instance.collection('offers').orderBy('time', descending: true).snapshots(), builder: (context, snap){ if(!snap.hasData) return const Center(child: CircularProgressIndicator()); return ListView(children: snap.data!.docs.map((d){ final data=d.data() as Map<String,dynamic>; return GestureDetector(onTap: ()=>showDetailAndBuy(data), child: Card(margin: const EdgeInsets.all(10), child: Column(children: [if(data['image']!=null) Image.memory(base64Decode(data['image']), height: 200, width: double.infinity, fit: BoxFit.cover), ListTile(title: Text(data['title']??''), subtitle: Text('${data['price']} جنيه', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)), trailing: isAdmin?IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: ()=>d.reference.delete()):const Icon(Icons.shopping_cart, color: Colors.green))]))) ; }).toList()); })); }
+class _Shop extends State<Shop> {
+  String f = 'الكل';
+  final items = [
+    {'name': 'سماعات لاسلكية برو', 'price': 899, 'rate': '4.8', 'cat': 'سماعات', 'tag': 'الافضل مبيعا', 'color': 0xFFD6EAF0},
+    {'name': 'شاحن سريع 25W', 'price': 349, 'rate': '4.6', 'cat': 'شواحن', 'tag': 'خصم 20', 'color': 0xFFF0F0F0},
+    {'name': 'كفر حماية ايفون 15', 'price': 199, 'rate': '4.7', 'cat': 'كفرات', 'tag': '', 'color': 0xFFF5F5F5},
+    {'name': 'كابل USB-C مضفور 1M', 'price': 129, 'rate': '4.5', 'cat': 'كابلات', 'tag': '', 'color': 0xFFF5F5F5},
+    {'name': 'سماعة بلوتوث', 'price': 450, 'rate': '4.8', 'cat': 'سماعات', 'tag': '', 'color': 0xFFD6EAF0},
+    {'name': 'صيانة شاشة', 'price': 500, 'rate': '4.9', 'cat': 'صيانة', 'tag': '', 'color': 0xFFD6EAF0},
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    List shown = f == 'الكل' ? items : items.where((e) => e['cat'] == f).toList();
+    return SafeArea(
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                CircleAvatar(backgroundColor: const Color(0xFF00B4A6).withOpacity(0.15), child: const Icon(Icons.person, color: Color(0xFF00B4A6))),
+                const SizedBox(width: 10),
+                const Expanded(child: Text('متجر الاكسسوارات', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900))),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Container(
+              decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(14)),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Row(
+                children: [
+                  const Icon(Icons.search, color: Colors.grey),
+                  const SizedBox(width: 😎,
+                  const Expanded(child: Text('ابحث عن سماعات, شواحن, كفرات', style: TextStyle(color: Colors.grey))),
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(color: const Color(0xFFFF7A00), borderRadius: BorderRadius.circular(8)),
+                    child: const Icon(Icons.tune, color: Colors.white, size: 18),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: ['الكل', 'سماعات', 'شواحن', 'كفرات', 'كابلات', 'صيانة'].map((c) {
+                bool a = f == c;
+                return Padding(
+                  padding: const EdgeInsets.only(left: 😎,
+                  child: ChoiceChip(
+                    label: Text(c),
+                    selected: a,
+                    selectedColor: const Color(0xFF0B7A70),
+                    labelStyle: TextStyle(color: a ? Colors.white : Colors.black),
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: Colors.grey.shade300)),
+                    onSelected: (_) => setState(() => f = c),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('المنتجات', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
+                Row(
+                  children: const [
+                    Text('الاكثر مبيعا', style: TextStyle(color: Color(0xFF00B4A6), fontWeight: FontWeight.bold)),
+                    Icon(Icons.keyboard_arrow_down, color: Color(0xFF00B4A6)),
+                  ],
+                ),
+                Text('${shown.length} منتج', style: const TextStyle(color: Colors.grey)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          Expanded(
+            child: GridView.builder(
+              padding: const EdgeInsets.all(16),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.72),
+              itemCount: shown.length,
+              itemBuilder: (c, i) {
+                var p = shown[i];
+                IconData iconData = Icons.headphones;
+                if (p['cat'] == 'شواحن') iconData = Icons.power;
+                if (p['cat'] == 'كفرات') iconData = Icons.phone_android;
+                if (p['cat'] == 'كابلات') iconData = Icons.usb;
+                if (p['cat'] == 'صيانة') iconData = Icons.build;
+                return Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10)],
+                  ),
+                  child: Column(
+                    children: [
+                      Stack(
+                        children: [
+                          Container(
+                            height: 130,
+                            width: double.infinity,
+                            decoration: BoxDecoration(color: Color(p['color'] as int), borderRadius: const BorderRadius.vertical(top: Radius.circular(16))),
+                            child: Icon(iconData, size: 70, color: const Color(0xFF0B1A3A)),
+                          ),
+                          if ((p['tag'] as String).isNotEmpty)
+                            Positioned(
+                              top: 8,
+                              left: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(color: const Color(0xFFFF7A00), borderRadius: BorderRadius.circular(6)),
+                                child: Text(p['tag'], style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                              ),
+                            ),
+                        ],
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(😎,
+                        child: Column(
+                          children: [
+                            Text(p['name'], textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14), maxLines: 2),
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.star, color: Colors.amber, size: 14),
+                                const Icon(Icons.star, color: Colors.amber, size: 14),
+                                const Icon(Icons.star, color: Colors.amber, size: 14),
+                                const Icon(Icons.star, color: Colors.amber, size: 14),
+                                const Icon(Icons.star_half, color: Colors.amber, size: 14),
+                                Text(' (${p['rate']})', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text('${p['price']} جنيه', style: const TextStyle(color: Color(0xFF00B4A6), fontWeight: FontWeight.w900, fontSize: 17)),
+                            const SizedBox(height: 6),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF7A00), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                                onPressed: () {
+                                  Store.i.addCart(p);
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تمت الاضافة للسلة')));
+                                },
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.shopping_cart, size: 16, color: Colors.white),
+                                    SizedBox(width: 4),
+                                    Text('اضافة للسلة', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class UsedPhonesPage extends StatefulWidget { const UsedPhonesPage({super.key}); @override State<UsedPhonesPage> createState() => _UsedPhonesPageState(); }
-class _UsedPhonesPageState extends State<UsedPhonesPage> {
-  bool isAdmin=false;
-  Future<void> checkAdmin() async { final c=TextEditingController(); showDialog(context: context, builder: (ctx)=>AlertDialog(title: const Text('ادمن'), content: TextField(controller: c, obscureText: true), actions: [ElevatedButton(onPressed: (){ if(c.text==adminPass){ setState(()=>isAdmin=true); Navigator.pop(ctx);} }, child: const Text('دخول'))])); }
-  Future<void> showDetailAndBuy(Map<String,dynamic> data) async { final n=TextEditingController(text: userName), p=TextEditingController(), a=TextEditingController(); showDialog(context: context, builder: (ctx)=>AlertDialog(contentPadding: EdgeInsets.zero, content: SingleChildScrollView(child: Column(children: [if(data['image']!=null) Image.memory(base64Decode(data['image']), height: 300, width: double.infinity, fit: BoxFit.fill), Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(data['name']??'', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)), Text('${data['price']} جنيه', style: const TextStyle(fontSize: 18, color: Colors.blue, fontWeight: FontWeight.bold)), Text('الحالة: ${data['condition']??''}'), const Divider(), TextField(controller: n, decoration: const InputDecoration(labelText: 'اسمك')), TextField(controller: p, decoration: const InputDecoration(labelText: 'رقمك'), keyboardType: TextInputType.phone), TextField(controller: a, decoration: const InputDecoration(labelText: 'عنوانك'))]))])), actions: [TextButton(onPressed: ()=>Navigator.pop(ctx), child: const Text('الغاء')), ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Colors.green), icon: const Icon(Icons.chat, color: Colors.white), label: const Text('شراء واتساب', style: TextStyle(color: Colors.white)), onPressed: () async { if(n.text.isEmpty||p.text.isEmpty) return; await FirebaseFirestore.instance.collection('orders').add({'type':'مستعمل - ${data['name']}', 'name':n.text, 'phone'😛.text, 'address':a.text, 'details':'الموبايل: ${data['name']} - ${data['price']} - ${data['condition']}', 'time':DateTime.now(), 'status':'قيد المراجعة'}); Navigator.pop(ctx); String msg = "عايز الموبايل المستعمل ده%0A*${data['name']}*%0A💰 ${data['price']} جنيه%0A👤 ${n.text}%0A📞 ${p.text}%0A📍 ${a.text}"; final uri=Uri.parse('https://wa.me/$waNumber?text=$msg'); if(await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication); })])); }
-  Future<void> addUsed() async { final n=TextEditingController(), pr=TextEditingController(), cond=TextEditingController(); String? img; final picker=ImagePicker(); showDialog(context: context, builder: (ctx)=>StatefulBuilder(builder: (ctx2, setSt)=>AlertDialog(title: const Text('موبايل مستعمل'), content: Column(mainAxisSize: MainAxisSize.min, children: [GestureDetector(onTap: () async { final x=await picker.pickImage(source: ImageSource.gallery, imageQuality: 50); if(x!=null){ final b=await x.readAsBytes(); setSt(()=>img=base64Encode(b)); } }, child: Container(height: 120, color: Colors.grey[300], child: img!=null?Image.memory(base64Decode(img!)):const Icon(Icons.add_a_photo))), TextField(controller: n, decoration: const InputDecoration(labelText: 'نوع الموبايل')), TextField(controller: pr, decoration: const InputDecoration(labelText: 'السعر')), TextField(controller: cond, decoration: const InputDecoration(labelText: 'الحالة'))]), actions: [ElevatedButton(onPressed: () async { await FirebaseFirestore.instance.collection('used_phones').add({'name':n.text,'price':pr.text,'condition':cond.text,'image':img,'time':DateTime.now()}); Navigator.pop(ctx); }, child: const Text('حفظ'))]))); }
-  @override Widget build(BuildContext context) { return Scaffold(appBar: AppBar(title: const Text('موبايلات مستعملة'), actions: [if(!isAdmin) IconButton(icon: const Icon(Icons.lock), onPressed: checkAdmin), if(isAdmin) IconButton(icon: const Icon(Icons.add), onPressed: addUsed)]), body: StreamBuilder<QuerySnapshot>(stream: FirebaseFirestore.instance.collection('used_phones').orderBy('time', descending: true).snapshots(), builder: (context, snap){ if(!snap.hasData) return const Center(child: CircularProgressIndicator()); return GridView.count(crossAxisCount: 2, childAspectRatio: 0.7, children: snap.data!.docs.map((d){ final data=d.data() as Map<String,dynamic>; return GestureDetector(onTap: ()=>showDetailAndBuy(data), child: Card(child: Column(children: [Expanded(child: data['image']!=null?Image.memory(base64Decode(data['image']), fit: BoxFit.cover, width: double.infinity):const Icon(Icons.phone_android)), Padding(padding: const EdgeInsets.all(4), child: Text(data['name']??'', style: const TextStyle(fontWeight: FontWeight.bold))), Text('${data['price']} جنيه'), Padding(padding: const EdgeInsets.all(2), child: Text(data['condition']??'', style: const TextStyle(fontSize: 11), maxLines: 2)), Container(margin: const EdgeInsets.all(2), padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(8)), child: const Text('شراء', style: TextStyle(color: Colors.white, fontSize: 10))), if(isAdmin) IconButton(icon: const Icon(Icons.delete, color: Colors.red, size: 20), onPressed: ()=>d.reference.delete())]))); }).toList()); })); }
+class Courier extends StatefulWidget {
+  const Courier({super.key});
+  @override
+  State<Courier> createState() => _Courier();
 }
 
-class TrackOrderPage extends StatefulWidget { const TrackOrderPage({super.key}); @override State<TrackOrderPage> createState() => _TrackOrderPageState(); }
-class _TrackOrderPageState extends State<TrackOrderPage> { final phoneCtrl=TextEditingController(); String searchPhone=''; @override Widget build(BuildContext context){ return Scaffold(appBar: AppBar(title: const Text('تتبع طلبي')), body: Column(children: [Padding(padding: const EdgeInsets.all(12), child: Row(children: [Expanded(child: TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: 'اكتب رقم تليفونك'), keyboardType: TextInputType.phone)), IconButton(icon: const Icon(Icons.search), onPressed: ()=>setState(()=>searchPhone=phoneCtrl.text))])), if(searchPhone.isNotEmpty) Expanded(child: StreamBuilder<QuerySnapshot>(stream: FirebaseFirestore.instance.collection('orders').where('phone', isEqualTo: searchPhone).orderBy('time', descending: true).snapshots(), builder: (context, snap){ if(!snap.hasData) return const Center(child: CircularProgressIndicator()); if(snap.data!.docs.isEmpty) return const Center(child: Text('مفيش طلبات بالرقم ده')); return ListView(children: snap.data!.docs.map((d){ final data=d.data() as Map<String,dynamic>; Color c=Colors.orange; if(data['status']=='جاري التوصيل') c=Colors.blue; if(data['status']=='تم التوصيل') c=Colors.green; if(data['status']=='تم الالغاء') c=Colors.red; return Card(margin: const EdgeInsets.all(😎, child: ListTile(title: Text(data['type']??''), subtitle: Text('الحالة: ${data['status']}'), trailing: CircleAvatar(backgroundColor: c, child: const Icon(Icons.local_shipping, color: Colors.white)))); }).toList()); })) ])); } }
+class _Courier extends State<Courier> {
+  double progress = 0.35;
+  int minutes = 8;
+  double km = 1.8;
+  String status = 'المندوب في الطريق اليك';
+  bool started = false;
 
-class ContactPage extends StatelessWidget { const ContactPage({super.key});
-  Future<void> openWhatsApp() async { final uri=Uri.parse('https://wa.me/$waNumber'); if(await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication); }
-  Future<void> callPhone() async { final uri=Uri.parse('tel:+201069068091'); if(await canLaunchUrl(uri)) await launchUrl(uri); }
-  @override Widget build(BuildContext context) { return Scaffold(appBar: AppBar(title: const Text('تواصل معنا / حسابي')), body: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
-    const Icon(Icons.store, size: 80, color: tealC), const SizedBox(height: 10), Text('أهلاً بيك يا ${userName.isEmpty ? 'عدي' : userName}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)), const Text('Oday Phone - الإسماعيلية'),
-    const SizedBox(height: 30),
-    SizedBox(width: double.infinity, height: 55, child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Colors.green), icon: const Icon(Icons.chat, color: Colors.white), label: const Text('واتساب 01069068091', style: TextStyle(color: Colors.white, fontSize: 18)), onPressed: openWhatsApp)),
-    const SizedBox(height: 12),
-    SizedBox(width: double.infinity, height: 55, child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: tealC), icon: const Icon(Icons.call, color: Colors.white), label: const Text('اتصال مباشر', style: TextStyle(color: Colors.white, fontSize: 18)), onPressed: callPhone)),
-    const SizedBox(height: 12),
-    const Card(child: ListTile(leading: Icon(Icons.location_on), title: Text('العنوان'), subtitle: Text('الإسماعيلية - Oday Phone - 01069068091'))),
-  ]))); }
+  void startTrip() {
+    setState(() {
+      started = true;
+    });
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(seconds: 2));
+      if (!mounted) return false;
+      if (progress >= 0.95) {
+        setState(() {
+          status = 'المندوب وصل - انزل استلم طلبك';
+          minutes = 0;
+          km = 0;
+        });
+        return false;
+      }
+      setState(() {
+        progress += 0.08;
+        if (minutes > 0) minutes -= 1;
+        if (km > 0) km -= 0.2;
+        if (progress > 0.6) status = 'المندوب قرب منك';
+      });
+      return true;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Icon(Icons.arrow_back, color: Color(0xFF00B4A6)),
+                SizedBox(width: 10),
+                Text('طلب مندوب', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Stack(
+              children: [
+                Container(
+                  color: const Color(0xFFDDE8E5),
+                  child: Stack(
+                    children: [
+                      Positioned(left: 30, top: 80, right: 30, child: Container(height: 3, color: Colors.white)),
+                      Positioned(left: 30, top: 200, right: 30, child: Container(height: 3, color: Colors.white)),
+                      Positioned(left: 100, top: 20, bottom: 20, child: Container(width: 3, color: Colors.white)),
+                      Positioned(left: 250, top: 20, bottom: 20, child: Container(width: 3, color: Colors.white)),
+                      Positioned(
+                        left: 40,
+                        top: 50,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(color: const Color(0xFFFF7A00), borderRadius: BorderRadius.circular(20)),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.delivery_dining, color: Colors.white, size: 16),
+                              SizedBox(width: 4),
+                              Text('المندوب الان', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        left: 40,
+                        top: 120,
+                        right: 60,
+                        child: SizedBox(height: 2, child: CustomPaint(painter: DashedLine())),
+                      ),
+                      AnimatedPositioned(
+                        duration: const Duration(seconds: 2),
+                        left: 40 + (progress * 220),
+                        top: 110,
+                        child: Container(
+                          padding: const EdgeInsets.all(😎,
+                          decoration: const BoxDecoration(color: Color(0xFF0B1A3A), shape: BoxShape.circle),
+                          child: const Icon(Icons.delivery_dining, color: Colors.white, size: 22),
+                        ),
+                      ),
+                      const Positioned(
+                        right: 20,
+                        bottom: 160,
+                        child: Column(
+                          children: [
+                            Icon(Icons.home, color: Color(0xFFFF7A00), size: 34),
+                            Text('بيتك'),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Positioned(
+                  right: 12,
+                  top: 20,
+                  child: Column(
+                    children: [
+                      FloatingActionButton.small(heroTag: 'btn1', backgroundColor: Colors.white, onPressed: () {}, child: const Icon(Icons.remove)),
+                      const SizedBox(height: 😎,
+                      FloatingActionButton.small(heroTag: 'btn2', backgroundColor: Colors.white, onPressed: () {}, child: const Icon(Icons.add)),
+                      FloatingActionButton.small(heroTag: 'btn3', backgroundColor: const Color(0xFF00B4A6), onPressed: () {}, child: const Icon(Icons.remove, color: Colors.white)),
+                    ],
+                  ),
+                ),
+                Positioned(
+                  left: 12,
+                  right: 12,
+                  bottom: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(😎,
+                              decoration: BoxDecoration(color: const Color(0xFFFF7A00).withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
+                              child: const Icon(Icons.delivery_dining, color: Color(0xFFFF7A00), size: 32),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(status, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                                  Text('علي بعد ${km.toStringAsFixed(1)} كم - يصل خلال $minutes دقائق تقريبا', style: const TextStyle(color: Colors.grey)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        const Text('تفاصيل الطلب', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                        const SizedBox(height: 10),
+                        detail(Icons.location_on, Colors.teal, 'نقطة الاستلام', 'الاسماعيلية - ابو عطوة - الشارع التجاري'),
+                        detail(Icons.location_on, Colors.orange, 'نقطة التسليم', 'الاسماعيلية - ابو عطوة - امام ماركت التوحيد'),
+                        detail(Icons.edit, Colors.teal, 'ملاحظات', 'يرجي الاتصال قبل الوصول - الطرد قابل للكسر'),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF7A00), padding: const EdgeInsets.all(14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                            onPressed: started ? null : startTrip,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.location_on, color: Colors.white),
+                                const SizedBox(width: 6),
+                                Text(started ? 'جاري التتبع - فاضل $minutes د' : 'تتبع الطلب', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {},
+                          child: const Center(child: Text('الغاء الطلب', style: TextStyle(color: Color(0xFF00B4A6), fontWeight: FontWeight.bold))),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget detail(IconData ic, Color c, String t, String s) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 😎,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(12)),
+      child: Row(
+        children: [
+          Icon(ic, color: c),
+          const SizedBox(width: 😎,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(t, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(s, style: const TextStyle(color: Colors.grey)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class DashedLine extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    var p = Paint()
+      ..color = const Color(0xFF00B4A6)
+      ..strokeWidth = 2;
+    double x = 0;
+    while (x < size.width) {
+      canvas.drawLine(Offset(x, 0), Offset(x + 8, 0), p);
+      x += 14;
+    }
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
+}
+
+class Checkout extends StatefulWidget {
+  const Checkout({super.key});
+  @override
+  State<Checkout> createState() => _Checkout();
+}
+
+class _Checkout extends State<Checkout> {
+  String pay = 'فودافون كاش';
+  final code = TextEditingController();
+  int discount = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    var cart = Store.i.cart;
+    int sub = 0;
+    for (var e in cart) {
+      sub += (e['price'] as int);
+    }
+    int service = 15;
+    int total = sub + service - discount;
+    if (total < 0) total = 0;
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: const [
+                Icon(Icons.arrow_back),
+                SizedBox(width: 10),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('الدفع والخروج', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+                    Text('مراجعة الطلب واتمام عملية الدفع', style: TextStyle(color: Colors.grey)),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Text('طرق الدفع', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 10),
+            payCard('فودافون كاش', 'محفظة فودافون كاش - ينتهي بـ 8214', 'V', const Color(0xFFE60000)),
+            payCard('فوري', 'الدفع عبر كود فوري او منفذ فوري', 'F', const Color(0xFFFF7A00)),
+            payCard('بطاقة فيزا', '12/27 تنتهي - 4532', 'VISA', const Color(0xFF1A4FA0)),
+            payCard('الدفع عند الاستلام', 'رسوم اضافية 20 جنيه عند التسليم', 'D', const Color(0xFF00B4A6)),
+            const SizedBox(height: 16),
+            const Text('ملخص الطلب', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(14)),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: const Color(0xFFFF7A00).withOpacity(0.15), borderRadius: BorderRadius.circular(10)),
+                        child: const Icon(Icons.shopping_bag, color: Color(0xFFFF7A00)),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(cart.isEmpty ? 'اشتراك برو شهري' : '${cart.length} منتج من المتجر', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            const Text('المدة: شهر واحد - تجديد تلقائي', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                      Text('$sub جنيه', style: const TextStyle(fontWeight: FontWeight.w900)),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('رسوم الخدمة', style: TextStyle(color: Colors.grey)),
+                      Text('$service جنيه', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.grey.shade300)),
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: TextField(
+                            controller: code,
+                            decoration: const InputDecoration(border: InputBorder.none, hintText: 'اضف كود الخصم', icon: Icon(Icons.local_offer_outlined, color: Color(0xFFFF7A00))),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 😎,
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF7A00)),
+                        onPressed: () {
+                          setState(() {
+                            discount = code.text.isNotEmpty ? 30 : 0;
+                          });
+                        },
+                        child: const Text('تطبيق', style: TextStyle(color: Colors.white)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(Icons.verified_user, color: Color(0xFF00B4A6), size: 16),
+                      SizedBox(width: 4),
+                      Text('دفع امن ومشفر - محمي بواسطة SSL 256-bit', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('المبلغ الاجمالي', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+                Text('$total جنيه', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFFFF7A00))),
+              ],
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00B4A6), padding: const EdgeInsets.all(16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                onPressed: () {
+                  if (cart.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('السلة فاضية - اختار من المتجر الاول')));
+                    return;
+                  }
+                  Store.i.addOrder({'id': 1000 + Store.i.orders.length + 1, 'items': cart.map((e) => e['name']).join(' - '), 'total': total, 'name': 'عدي', 'phone': '01000000000', 'address': 'ابو عطوة', 'pay': pay, 'status': 'طلب جديد'});
+                  showDialog(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: const Text('تم استلام طلبك'),
+                      content: Text('تم الدفع بـ $pay - الاجمالي $total جنيه'),
+                      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('تمام'))],
+                    ),
+                  );
+                },
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.lock, color: Colors.white),
+                    SizedBox(width: 6),
+                    Text('ادفع الان', style: TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+            ),
+            const Center(child: Text('بالضغط على ادفع الان انت توافق على الشروط والاحكام', style: TextStyle(color: Colors.grey, fontSize: 12))),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget payCard(String t, String s, String logo, Color c) {
+    bool sel = pay == t;
+    return InkWell(
+      onTap: () => setState(() => pay = t),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: sel ? const Color(0xFF00B4A6) : Colors.grey.shade300, width: sel ? 2 : 1),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(10)),
+              child: Center(child: Text(logo, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900))),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(t, style: const TextStyle(fontWeight: FontWeight.w900)),
+                  Text(s, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                ],
+              ),
+            ),
+            Icon(sel ? Icons.radio_button_checked : Icons.radio_button_off, color: sel ? const Color(0xFF00B4A6) : Colors.grey),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class MyOrders extends StatelessWidget {
+  const MyOrders({super.key});
+  @override
+  Widget build(BuildContext context) {
+    var o = Store.i.orders;
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('طلباتي', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 12),
+            if (o.isEmpty)
+              const Expanded(child: Center(child: Text('لسه معملتش اي طلب')))
+            else
+              Expanded(
+                child: ListView.builder(
+                  itemCount: o.length,
+                  itemBuilder: (c, i) {
+                    var x = o[i];
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10)],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text('طلب #${x['id']}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                              const Spacer(),
+                              Text(x['status'], style: const TextStyle(color: Color(0xFFFF7A00), fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                          Text('المنتجات: ${x['items']}'),
+                          Text('الاجمالي: ${x['total']} جنيه - ${x['pay']}'),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
