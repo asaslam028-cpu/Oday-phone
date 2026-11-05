@@ -729,7 +729,7 @@ class _Checkout extends State<Checkout> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 😎,
+                      const SizedBox(width: 10),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF7A00)),
                         onPressed: () {
@@ -737,14 +737,14 @@ class _Checkout extends State<Checkout> {
                             discount = code.text.isNotEmpty ? 30 : 0;
                           });
                         },
-                        child: const Text('تطبيق', style: TextStyle(color: Colors.white)),
+                        child:Text('تطبيق', style: TextStyle(color: Colors.white)),
                       ),
                     ],
                   ),
                   const SizedBox(height: 10),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
+                    children:[
                       Icon(Icons.verified_user, color: Color(0xFF00B4A6), size: 16),
                       SizedBox(width: 4),
                       Text('دفع امن ومشفر - محمي بواسطة SSL 256-bit', style: TextStyle(color: Colors.grey, fontSize: 12)),
@@ -757,7 +757,7 @@ class _Checkout extends State<Checkout> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('المبلغ الاجمالي', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+                Text('المبلغ الاجمالي', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
                 Text('$total جنيه', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFFFF7A00))),
               ],
             ),
