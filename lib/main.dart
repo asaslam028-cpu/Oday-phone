@@ -119,7 +119,7 @@ class _Home extends State<Home> {
               child: Row(
                 children: [
                   Icon(Icons.search, color: teal, size: 26),
-                  const SizedBox(width: 10,
+                  const SizedBox(width: 10),
                   const Expanded(child: Text('ابحث عن خدمة صيانة', style: TextStyle(color: Colors.grey))),
                   Icon(Icons.tune, color: orange),
                 ],
@@ -160,7 +160,7 @@ class _Home extends State<Home> {
               child: const Row(
                 children: [
                   Icon(Icons.location_on, color: Color(0xFF00B4A6)),
-                  SizedBox(width: 10,
+                  SizedBox(width: 10),
                   Expanded(child: Text('الاسماعيلية - ابو عطوة - الشارع التجاري - امام ماركت التوحيد', style: TextStyle(fontWeight: FontWeight.bold))),
                 ],
               ),
@@ -261,7 +261,7 @@ class _Shop extends State<Shop> {
               child: Row(
                 children: [
                   const Icon(Icons.search, color: Colors.grey),
-                  const SizedBox(width: 10,
+                  const SizedBox(width: 10),
                   const Expanded(child: Text('ابحث عن سماعات, شواحن, كفرات', style: TextStyle(color: Colors.grey))),
                   Container(
                     padding: const EdgeInsets.all(6),
@@ -280,7 +280,7 @@ class _Shop extends State<Shop> {
               children: ['الكل', 'سماعات', 'شواحن', 'كفرات', 'كابلات', 'صيانة'].map((c) {
                 bool a = f == c;
                 return Padding(
-                  padding: const EdgeInsets.only(left: 10,
+                  padding: const EdgeInsets.only(left: 10),
                   child: ChoiceChip(
                     label: Text(c),
                     selected: a,
@@ -353,7 +353,7 @@ class _Shop extends State<Shop> {
                         ],
                       ),
                       Padding(
-                        padding: const EdgeInsets.all(10,
+                        padding: const EdgeInsets.all(10),
                         child: Column(
                           children: [
                             Text(p['name'], textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14), maxLines: 2),
@@ -495,7 +495,7 @@ class _Courier extends State<Courier> {
                         left: 40 + (progress * 220),
                         top: 110,
                         child: Container(
-                          padding: const EdgeInsets.all(10,
+                          padding: const EdgeInsets.all(10),
                           decoration: const BoxDecoration(color: Color(0xFF0B1A3A), shape: BoxShape.circle),
                           child: const Icon(Icons.delivery_dining, color: Colors.white, size: 22),
                         ),
@@ -519,7 +519,7 @@ class _Courier extends State<Courier> {
                   child: Column(
                     children: [
                       FloatingActionButton.small(heroTag: 'btn1', backgroundColor: Colors.white, onPressed: () {}, child: const Icon(Icons.remove)),
-                      const SizedBox(height: 10,
+                      const SizedBox(height: 10),
                       FloatingActionButton.small(heroTag: 'btn2', backgroundColor: Colors.white, onPressed: () {}, child: const Icon(Icons.add)),
                       FloatingActionButton.small(heroTag: 'btn3', backgroundColor: const Color(0xFF00B4A6), onPressed: () {}, child: const Icon(Icons.remove, color: Colors.white)),
                     ],
@@ -538,7 +538,7 @@ class _Courier extends State<Courier> {
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.all(10,
+                              padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(color: const Color(0xFFFF7A00).withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
                               child: const Icon(Icons.delivery_dining, color: Color(0xFFFF7A00), size: 32),
                             ),
@@ -594,13 +594,13 @@ class _Courier extends State<Courier> {
 
   Widget detail(IconData ic, Color c, String t, String s) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 10,
+      margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(12)),
       child: Row(
         children: [
           Icon(ic, color: c),
-          const SizedBox(width: 10,
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
