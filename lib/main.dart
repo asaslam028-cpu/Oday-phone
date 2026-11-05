@@ -41,9 +41,68 @@ class OdayApp extends StatelessWidget {
             primaryColor: const Color(0xFF00B4A6),
             scaffoldBackgroundColor: Colors.white,
           ),
-          home: const Home(),
+          home: const Splash(),
         );
       },
+    );
+  }
+}
+
+// 1 - شاشة البداية الجديدة
+class Splash extends StatelessWidget {
+  const Splash({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0B1A3A),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircleAvatar(
+                radius: 55,
+                backgroundColor: Color(0xFFFF7A00),
+                child: Icon(Icons.phone_android, size: 60, color: Colors.white),
+              ),
+              const SizedBox(height: 16),
+              const Text('Oday Phone', style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.white)),
+              const Text('اوداي فون', style: TextStyle(fontSize: 22, color: Color(0xFFFF7A00), fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              const Text('اهلا بيك في اوداي فون', style: TextStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold)),
+              const Text('خدماتك المنزلية في الاسماعيلية', style: TextStyle(color: Colors.white70)),
+              const SizedBox(height: 30),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF7A00), padding: const EdgeInsets.all(15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                  onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const Home())),
+                  child: const Text('ابدأ الآن', style: TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(padding: const EdgeInsets.all(15), side: const BorderSide(color: Colors.white54), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                  onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const Home())),
+                  child: const Text('عندي حساب', style: TextStyle(color: Colors.white, fontSize: 17)),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.location_on, color: Color(0xFF00B4A6), size: 18),
+                  SizedBox(width: 6),
+                  Expanded(child: Text('الاسماعيلية - ابو عطوة - الشارع التجاري - امام ماركت التوحيد', textAlign: TextAlign.center, style: TextStyle(color: Colors.white70, fontSize: 12))),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -64,9 +123,11 @@ class _Home extends State<Home> {
     List<Widget> pages = [
       homeBody(),
       const Shop(),
+      const MaintenancePage(),
       const Courier(),
       const Checkout(),
       const MyOrders(),
+      const AdminPage(),
     ];
     return Scaffold(
       body: pages[idx],
@@ -79,9 +140,11 @@ class _Home extends State<Home> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'الرئيسية'),
           BottomNavigationBarItem(icon: Icon(Icons.store), label: 'المتجر'),
+          BottomNavigationBarItem(icon: Icon(Icons.build), label: 'صيانة'),
           BottomNavigationBarItem(icon: Icon(Icons.delivery_dining), label: 'المندوب'),
           BottomNavigationBarItem(icon: Icon(Icons.payment), label: 'الدفع'),
           BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'طلباتي'),
+          BottomNavigationBarItem(icon: Icon(Icons.admin_panel_settings), label: 'الادمن'),
         ],
       ),
     );
@@ -136,10 +199,10 @@ class _Home extends State<Home> {
             const SizedBox(height: 12),
             Row(
               children: [
-                serviceBox(teal, Icons.build, 'صيانة من المنزل', () => setState(() => idx = 1)),
+                serviceBox(teal, Icons.build, 'صيانة من المنزل', () => setState(() => idx = 2)),
                 serviceBox(orange, Icons.shopping_bag, 'متجر اكسسوارات', () => setState(() => idx = 1)),
-                serviceBox(teal, Icons.delivery_dining, 'اطلب مندوب', () => setState(() => idx = 2)),
-                serviceBox(orange, Icons.credit_card, 'الدفع', () => setState(() => idx = 3)),
+                serviceBox(teal, Icons.delivery_dining, 'اطلب مندوب', () => setState(() => idx = 3)),
+                serviceBox(orange, Icons.credit_card, 'الدفع', () => setState(() => idx = 4)),
               ],
             ),
             const SizedBox(height: 20),
@@ -215,6 +278,80 @@ class _Home extends State<Home> {
           ),
           Icon(Icons.arrow_forward_ios, color: orange, size: 18),
         ],
+      ),
+    );
+  }
+}
+
+// 2 - صفحة صيانة هواتف من المنزل - جديدة
+class MaintenancePage extends StatefulWidget {
+  const MaintenancePage({super.key});
+  @override
+  State<MaintenancePage> createState() => _MaintenancePageState();
+}
+
+class _MaintenancePageState extends State<MaintenancePage> {
+  String phoneType = 'ايفون';
+  String fault = 'شاشة';
+  final nameC = TextEditingController();
+  final phoneC = TextEditingController();
+  final addressC = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('صيانة هواتف من المنزل', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+            const Text('املأ البيانات والفني هيجيلك لحد البيت', style: TextStyle(color: Color(0xFFFF7A00), fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            const Text('نوع الموبايل', style: TextStyle(fontWeight: FontWeight.bold)),
+            Wrap(
+              spacing: 8,
+              children: ['ايفون', 'سامسونج', 'شاومي'].map((e) {
+                bool sel = phoneType == e;
+                return ChoiceChip(label: Text(e), selected: sel, selectedColor: const Color(0xFFFF7A00), labelStyle: TextStyle(color: sel ? Colors.white : Colors.black), onSelected: (_) => setState(() => phoneType = e));
+              }).toList(),
+            ),
+            const SizedBox(height: 14),
+            const Text('العطل ايه؟', style: TextStyle(fontWeight: FontWeight.bold)),
+            Wrap(
+              spacing: 8,
+              children: ['شاشة', 'بطارية', 'سوفت وير', 'سماعة'].map((e) {
+                bool sel = fault == e;
+                return ChoiceChip(label: Text(e), selected: sel, selectedColor: const Color(0xFF00B4A6), labelStyle: TextStyle(color: sel ? Colors.white : Colors.black), onSelected: (_) => setState(() => fault = e));
+              }).toList(),
+            ),
+            const SizedBox(height: 14),
+            TextField(controller: nameC, decoration: const InputDecoration(labelText: 'الاسم بالكامل', border: OutlineInputBorder())),
+            const SizedBox(height: 12),
+            TextField(controller: phoneC, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'رقم التليفون 01XXXXXXXXX', border: OutlineInputBorder())),
+            const SizedBox(height: 12),
+            TextField(controller: addressC, decoration: const InputDecoration(labelText: 'العنوان - المنطقة - الشارع - رقم المبنى', border: OutlineInputBorder())),
+            const SizedBox(height: 12),
+            const Row(children: [Icon(Icons.info, color: Color(0xFFFF7A00), size: 18), SizedBox(width: 6), Text('الفني هيجيلك لحد البيت خلال 60 دقيقة', style: TextStyle(color: Color(0xFFFF7A00)))]),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF7A00), padding: const EdgeInsets.all(15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                onPressed: () {
+                  if (nameC.text.isEmpty || phoneC.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('اكتب الاسم ورقم التليفون الاول')));
+                    return;
+                  }
+                  Store.i.addOrder({'id': 1000 + Store.i.orders.length + 1, 'items': 'صيانة $phoneType - $fault', 'total': 0, 'name': nameC.text, 'phone': phoneC.text, 'address': addressC.text, 'pay': 'عند الاستلام', 'status': 'طلب جديد'});
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم استلام طلب الصيانة - الفني في الطريق')));
+                  nameC.clear(); phoneC.clear(); addressC.clear();
+                },
+                child: const Text('اطلب الصيانة', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -640,7 +777,7 @@ class Checkout extends StatefulWidget {
 }
 
 class _Checkout extends State<Checkout> {
-  String pay = 'فودافون كاش';
+  String pay = 'فودافون كاش - 01015519180';
   final code = TextEditingController();
   int discount = 0;
 
@@ -676,7 +813,8 @@ class _Checkout extends State<Checkout> {
             const SizedBox(height: 16),
             const Text('طرق الدفع', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
             const SizedBox(height: 10),
-            payCard('فودافون كاش', 'محفظة فودافون كاش - ينتهي بـ 8214', 'V', const Color(0xFFE60000)),
+            payCard('فودافون كاش - 01015519180', 'حول على 01015519180 وابعت سكرين شوت واتساب', 'V', const Color(0xFFE60000)),
+            payCard('انستا باي - 01069068091', 'تحويل انستا باي على 01069068091', 'IP', const Color(0xFF6C2BD9)),
             payCard('فوري', 'الدفع عبر كود فوري او منفذ فوري', 'F', const Color(0xFFFF7A00)),
             payCard('بطاقة فيزا', '12/27 تنتهي - 4532', 'VISA', const Color(0xFF1A4FA0)),
             payCard('الدفع عند الاستلام', 'رسوم اضافية 20 جنيه عند التسليم', 'D', const Color(0xFF00B4A6)),
@@ -877,6 +1015,60 @@ class MyOrders extends StatelessWidget {
                           ),
                           Text('المنتجات: ${x['items']}'),
                           Text('الاجمالي: ${x['total']} جنيه - ${x['pay']}'),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// 3 - صفحة الادمن - جديدة
+class AdminPage extends StatelessWidget {
+  const AdminPage({super.key});
+  @override
+  Widget build(BuildContext context) {
+    var o = Store.i.orders;
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('لوحة تحكم الادمن', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+            Text('طلبات اليوم ${o.length}', style: const TextStyle(color: Color(0xFFFF7A00), fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            if (o.isEmpty)
+              const Expanded(child: Center(child: Text('مفيش طلبات النهاردة')))
+            else
+              Expanded(
+                child: ListView.builder(
+                  itemCount: o.length,
+                  itemBuilder: (c, i) {
+                    var x = o[i];
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10)]),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(children: [Text('طلب #${x['id']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)), const Spacer(), Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: const Color(0xFFFF7A00), borderRadius: BorderRadius.circular(20)), child: Text(x['status'], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)))]),
+                          const SizedBox(height: 6),
+                          Text('${x['items']}'),
+                          Text('الاسم: ${x['name']} - ${x['phone']}'),
+                          Text('العنوان: ${x['address']} - ${x['pay']}'),
+                          const SizedBox(height: 10),
+                          Row(children: [
+                            Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00B4A6)), onPressed: () => Store.i.setStatus(i, 'تم'), child: const Text('تم ✅', style: TextStyle(color: Colors.white)))),
+                            const SizedBox(width: 10),
+                            Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF7A00)), onPressed: () => Store.i.setStatus(i, 'جاري الصيانة'), child: const Text('جاري الصيانة', style: TextStyle(color: Colors.white)))),
+                          ]),
                         ],
                       ),
                     );
