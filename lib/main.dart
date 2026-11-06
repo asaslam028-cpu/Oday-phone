@@ -239,15 +239,46 @@ class StorePage extends StatelessWidget {
       SizedBox(height: 100, child: ListView.builder(scrollDirection: Axis.horizontal, itemCount: cats.length, itemBuilder: (c, i) => Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: InkWell(onTap: () => onCategory(cats[i]), child: Container(width: 80, padding: const EdgeInsets.all(8, decoration: BoxDecoration(color: category == cats[i] ? Colors.orange : Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.orange)), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(catIcons[i], color: category == cats[i] ? Colors.white : Colors.orange), const SizedBox(height: 4), Text(cats[i], style: TextStyle(color: category == cats[i] ? Colors.white : Colors.black, fontWeight: FontWeight.bold))])))))),
       Expanded(child: products.isEmpty ? const Center(child: Text('لا توجد منتجات في هذه الفئة')) : GridView.builder(padding: const EdgeInsets.all(12), gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 0.72, crossAxisSpacing: 10, mainAxisSpacing: 10), itemCount: products.length, itemBuilder: (context, i) {
         Product p = products[i];
-        return Card(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Expanded(child: Container(width: double.infinity, decoration: const BoxDecoration(color: Color(0xFFFFF3E0), borderRadius: BorderRadius.only(topLeft: Radius.circular(14), topRight: Radius.circular(14))), child: p.imageUrl != null && p.imageUrl!.isNotEmpty ? ClipRRect(borderRadius: const BorderRadius.only(topLeft: Radius.circular(14), topRight: Radius.circular(14)), child: Image.network(p.imageUrl!, fit: BoxFit.cover, width: double.infinity, errorBuilder: (, _, _) => Icon(p.icon, size: 50, color: Colors.orange))) : p.imagePath != null ? ClipRRect(borderRadius: const BorderRadius.only(topLeft: Radius.circular(14), topRight: Radius.circular(14)), child: Image.file(File(p.imagePath!), fit: BoxFit.cover, width: double.infinity, errorBuilder: (, _, _) => Icon(p.icon, size: 50, color: Colors.orange))) : Icon(p.icon, size: 50, color: Colors.orange))),
-        Padding(
-  padding: const EdgeInsets.all(10),
+        return Card(
+  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
   child: Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
-      Text(p.desc, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+      ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: p.imagePath != null
+            ? Image.file(File(p.imagePath!), height: 120, width: 200, fit: BoxFit.cover)
+            : Container(height: 120, width: 200, color: Colors.grey[200], child: Icon(p.icon, size: 50, color: Colors.blue)),
+      ),
+      Padding(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+            Text(p.desc, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Text('${p.price} ج', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
+                if (p.isOffer) Text(' ${p.oldPrice} ج', style: const TextStyle(decoration: TextDecoration.lineThrough, color: Colors.grey, fontSize: 12)),
+              ],
+            ),
+          ],
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.all(10),
+        child: Row(
+          children: [
+            Expanded(child: ElevatedButton(onPressed: () { setState(() { cart.add(OrderItem(name: p.name, qty: 1, price: p.price)); }); }, child: const Text('اضافة'))),
+            IconButton(onPressed: () { setState(() { p.isFav = !p.isFav; }); }, icon: Icon(p.isFav ? Icons.favorite : Icons.favorite_border, color: Colors.red)),
+          ],
+        ),
+      ),
+    ],
+  ),
+);
       const SizedBox(height: 4),
       Row(
         children: [
