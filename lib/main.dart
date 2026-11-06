@@ -1,3 +1,4 @@
+لقد أرسلت
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -12,10 +13,17 @@ const String instapayNumber = '01069068091';
 
 // ================= MODELS =================
 class Product {
-  String name; String desc; double price; double oldPrice; String category; bool isOffer; bool isFav; String? imagePath; IconData icon;
-  Product({required this.name, required this.desc, required this.price, this.oldPrice = 0, required this.category, this.isOffer = false, this.isFav = false, this.imagePath, required this.icon});
-  Map<String, dynamic> toJson() => {'name': name, 'desc': desc, 'price': price, 'oldPrice': oldPrice, 'category': category, 'isOffer': isOffer, 'isFav': isFav, 'imagePath': imagePath, 'icon': icon.codePoint};
-  factory Product.fromJson(Map<String, dynamic> j) => Product(name: j['name'], desc: j['desc'], price: (j['price'] as num).toDouble(), oldPrice: (j['oldPrice'] as num?)?.toDouble() ?? 0, category: j['category'], isOffer: j['isOffer'] ?? false, isFav: j['isFav'] ?? false, imagePath: j['imagePath'], icon: IconData(j['icon'] ?? Icons.phone_android.codePoint, fontFamily: 'MaterialIcons'));
+  String name; String desc; double price; double oldPrice; String category; bool isOffer; bool isFav; String? imagePath; String iconName;
+  Product({required this.name, required this.desc, required this.price, this.oldPrice = 0, required this.category, this.isOffer = false, this.isFav = false, this.imagePath, this.iconName = 'phone'});
+  Map<String, dynamic> toJson() => {'name': name, 'desc': desc, 'price': price, 'oldPrice': oldPrice, 'category': category, 'isOffer': isOffer, 'isFav': isFav, 'imagePath': imagePath, 'iconName': iconName};
+  factory Product.fromJson(Map<String, dynamic> j) => Product(name: j['name'], desc: j['desc'], price: (j['price'] as num).toDouble(), oldPrice: (j['oldPrice'] as num?)?.toDouble() ?? 0, category: j['category'], isOffer: j['isOffer'] ?? false, isFav: j['isFav'] ?? false, imagePath: j['imagePath'], iconName: j['iconName'] ?? 'phone');
+}
+
+IconData getProductIcon(String name) {
+  if (name == 'charge') return Icons.charging_station;
+  if (name == 'head') return Icons.headphones;
+  if (name == 'cable') return Icons.cable;
+  return Icons.phone_android;
 }
 
 class OrderItem {
@@ -55,12 +63,12 @@ class _OdayAppState extends State<OdayApp> {
   List<AppOrder> orders = [];
   List<RepairRequest> repairs = [];
   List<Product> products = [
-    Product(name: 'جراب موبايل', desc: 'جراب حماية خامة نضيفة', price: 150, oldPrice: 200, category: 'جرابات', isOffer: true, icon: Icons.phone_android),
-    Product(name: 'شاحن سريع', desc: 'شاحن سريع اصلي', price: 350, oldPrice: 450, category: 'شواحن', isOffer: true, icon: Icons.charging_station),
-    Product(name: 'سماعة بلوتوث', desc: 'سماعة صوت نقي', price: 600, category: 'سماعات', icon: Icons.headphones),
-    Product(name: 'سكرينة حماية', desc: 'سكرينة ضد الكسر', price: 100, category: 'سكرينات', icon: Icons.phone_android),
-    Product(name: 'وصلة شاحن', desc: 'وصلة شحن سريع', price: 120, category: 'شواحن', icon: Icons.cable),
-    Product(name: 'حامل موبايل', desc: 'حامل للعربية والمكتب', price: 200, category: 'اكسسوارات', icon: Icons.phone_android),
+    Product(name: 'جراب موبايل', desc: 'جراب حماية خامة نضيفة', price: 150, oldPrice: 200, category: 'جرابات', isOffer: true, iconName: 'phone'),
+    Product(name: 'شاحن سريع', desc: 'شاحن سريع اصلي', price: 350, oldPrice: 450, category: 'شواحن', isOffer: true, iconName: 'charge'),
+    Product(name: 'سماعة بلوتوث', desc: 'سماعة صوت نقي', price: 600, category: 'سماعات', iconName: 'head'),
+    Product(name: 'سكرينة حماية', desc: 'سكرينة ضد الكسر', price: 100, category: 'سكرينات', iconName: 'phone'),
+    Product(name: 'وصلة شاحن', desc: 'وصلة شحن سريع', price: 120, category: 'شواحن', iconName: 'cable'),
+    Product(name: 'حامل موبايل', desc: 'حامل للعربية والمكتب', price: 200, category: 'اكسسوارات', iconName: 'phone'),
   ];
 
   List<String> storeCategories = ['الكل', 'جرابات', 'شواحن', 'سماعات', 'سكرينات', 'اكسسوارات'];
@@ -156,7 +164,7 @@ class _OdayAppState extends State<OdayApp> {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.orange, fontFamily: 'Cairo', scaffoldBackgroundColor: const Color(0xFFF6F7FB)),
+      theme: ThemeData(primarySwatch: Colors.orange, scaffoldBackgroundColor: const Color(0xFFF6F7FB)),
       home: Scaffold(
         appBar: AppBar(
           backgroundColor: const Color(0xFF0F172A),
@@ -201,7 +209,6 @@ class _OdayAppState extends State<OdayApp> {
     return _buildHome();
   }
 
-  // ============ HOME ============
   Widget _buildHome() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -226,13 +233,12 @@ class _OdayAppState extends State<OdayApp> {
                   Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.orange, borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.store, color: Colors.white, size: 30)),
                   const SizedBox(width: 12),
                   const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('المتجر', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)), Text('جرابات وشواحن وسماعات وسكرينات', style: TextStyle(color: Colors.grey))])),
-                  const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+                  const Icon(Icons.arrow_forward_ios, size: 17, color: Colors.grey),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 16),
-          // بوكس المندوب - الاساسي
           InkWell(
             onTap: () => _openRepairForm('مندوب صيانة موبايل'),
             child: Container(
@@ -291,7 +297,6 @@ class _OdayAppState extends State<OdayApp> {
     );
   }
 
-  // ============ STORE ============
   Widget _buildStore() {
     return Column(
       children: [
@@ -339,7 +344,7 @@ class _OdayAppState extends State<OdayApp> {
             child: Container(
               width: double.infinity,
               decoration: BoxDecoration(color: Colors.grey[200], borderRadius: const BorderRadius.vertical(top: Radius.circular(14))),
-              child: p.imagePath != null ? ClipRRect(borderRadius: const BorderRadius.vertical(top: Radius.circular(14)), child: Image.file(File(p.imagePath!), fit: BoxFit.cover)) : Icon(p.icon, size: 50, color: Colors.blue),
+              child: p.imagePath != null ? ClipRRect(borderRadius: const BorderRadius.vertical(top: Radius.circular(14)), child: Image.file(File(p.imagePath!), fit: BoxFit.cover)) : Icon(getProductIcon(p.iconName), size: 50, color: Colors.blue),
             ),
           ),
           Padding(
@@ -373,7 +378,6 @@ class _OdayAppState extends State<OdayApp> {
     );
   }
 
-  // ============ CART ============
   Widget _buildCart() {
     if (cart.isEmpty) {
       return const Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.shopping_cart_outlined, size: 70, color: Colors.grey), SizedBox(height: 10), Text('السلة فاضية')]));
@@ -497,7 +501,6 @@ class _OdayAppState extends State<OdayApp> {
     );
   }
 
-  // ============ REPAIR FORM ============
   void _openRepairForm(String kind) {
     final nameC = TextEditingController();
     final phoneC = TextEditingController();
@@ -556,7 +559,6 @@ class _OdayAppState extends State<OdayApp> {
     );
   }
 
-  // ============ ADMIN ============
   void _openAdmin() {
     showModalBottomSheet(
       context: context,
@@ -632,7 +634,7 @@ class _OdayAppState extends State<OdayApp> {
                   onPressed: () {
                     if (nameC.text.isEmpty || priceC.text.isEmpty) return;
                     setState(() {
-                      products.add(Product(name: nameC.text, desc: descC.text, price: double.tryParse(priceC.text) ?? 0, oldPrice: double.tryParse(oldC.text) ?? 0, category: cat, isOffer: isOffer, imagePath: imgPath, icon: Icons.phone_android));
+                      products.add(Product(name: nameC.text, desc: descC.text, price: double.tryParse(priceC.text) ?? 0, oldPrice: double.tryParse(oldC.text) ?? 0, category: cat, isOffer: isOffer, imagePath: imgPath, iconName: 'phone'));
                       _saveAll();
                     });
                     Navigator.pop(ctx);
