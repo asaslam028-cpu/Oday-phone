@@ -10,7 +10,7 @@ void main() { runApp(const OdayApp()); }
 // ================= MODELS =================
 class ServiceItem {
   String name; String desc; IconData icon; double price; String category; double rating; bool isFav;
-  ServiceItem({required this.name, required this.desc, required this.icon, required this.price, required this.category, this.rating = 4.8, this.isFav = false});
+  ServiceItem({required this.name, required this.desc, required this.icon, required this.price, required this.category, this.rating = 4.8), this.isFav = false});
   Map<String, dynamic> toJson() => {'name': name, 'desc': desc, 'price': price, 'category': category, 'rating': rating, 'isFav': isFav, 'icon': icon.codePoint};
   factory ServiceItem.fromJson(Map<String, dynamic> j) => ServiceItem(name: j['name'], desc: j['desc'], price: (j['price'] as num).toDouble(), category: j['category'], rating: (j['rating'] as num?)?.toDouble() ?? 4.8, isFav: j['isFav'] ?? false, icon: IconData(j['icon'] ?? Icons.build.codePoint, fontFamily: 'MaterialIcons'));
 }
