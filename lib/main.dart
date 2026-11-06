@@ -475,7 +475,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
       ])))).toList(),
       const SizedBox(height: 16),
       const Text('المنتجات - تقدر تمسح:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-      const SizedBox(height: 10),
+      const SizedBox(height: 16),
       ...widget.products.map((p) => Card(child: ListTile(leading: p.imagePath != null ? ClipRRect(borderRadius: BorderRadius.circular(😎, child: Image.file(File(p.imagePath!), width: 50, height: 50, fit: BoxFit.cover)) : Icon(p.icon, color: Colors.blue), title: Text(p.name), subtitle: Text('${p.price} ج - ${p.category}'), trailing: IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => widget.onDeleteProduct(p))))).toList(),
     ])));
   }
