@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -10,380 +11,640 @@ const String vodafoneNumber = '01015519180';
 const String instapayNumber = '01069068091';
 
 // ================= MODELS =================
-class ServiceItem {
-  String name; String desc; IconData icon; double price; String category; double rating; bool isFav;
-  ServiceItem({required this.name, required this.desc, required this.icon, required this.price, required this.category, this.rating = 4.8, this.isFav = false});
-  Map<String, dynamic> toJson() => {'name': name, 'desc': desc, 'price': price, 'category': category, 'rating': rating, 'isFav': isFav, 'icon': icon.codePoint};
-  factory ServiceItem.fromJson(Map<String, dynamic> j) => ServiceItem(name: j['name'], desc: j['desc'], price: (j['price'] as num).toDouble(), category: j['category'], rating: (j['rating'] as num?)?.toDouble() ?? 4.8, isFav: j['isFav'] ?? false, icon: IconData(j['icon'] ?? Icons.build.codePoint, fontFamily: 'MaterialIcons'));
-}
 class Product {
-  String name; String desc; double price; String? imagePath; String? imageUrl; IconData icon; String category; bool isOffer; double oldPrice; bool isFav;
-  Product({required this.name, required this.desc, required this.price, this.imagePath, this.imageUrl, required this.icon, required this.category, this.isOffer = false, this.oldPrice = 0, this.isFav = false});
-  Map<String, dynamic> toJson() => {'name': name, 'desc': desc, 'price': price, 'imagePath': imagePath, 'imageUrl': imageUrl, 'category': category, 'isOffer': isOffer, 'oldPrice': oldPrice, 'isFav': isFav, 'icon': icon.codePoint};
-  factory Product.fromJson(Map<String, dynamic> j) => Product(name: j['name'], desc: j['desc'], price: (j['price'] as num).toDouble(), imagePath: j['imagePath'], imageUrl: j['imageUrl'], category: j['category'], isOffer: j['isOffer'] ?? false, oldPrice: (j['oldPrice'] as num?)?.toDouble() ?? 0, isFav: j['isFav'] ?? false, icon: IconData(j['icon'] ?? Icons.shopping_bag.codePoint, fontFamily: 'MaterialIcons'));
+  String name; String desc; double price; double oldPrice; String category; bool isOffer; bool isFav; String? imagePath; IconData icon;
+  Product({required this.name, required this.desc, required this.price, this.oldPrice = 0, required this.category, this.isOffer = false, this.isFav = false, this.imagePath, required this.icon});
+  Map<String, dynamic> toJson() => {'name': name, 'desc': desc, 'price': price, 'oldPrice': oldPrice, 'category': category, 'isOffer': isOffer, 'isFav': isFav, 'imagePath': imagePath, 'icon': icon.codePoint};
+  factory Product.fromJson(Map<String, dynamic> j) => Product(name: j['name'], desc: j['desc'], price: (j['price'] as num).toDouble(), oldPrice: (j['oldPrice'] as num?)?.toDouble() ?? 0, category: j['category'], isOffer: j['isOffer'] ?? false, isFav: j['isFav'] ?? false, imagePath: j['imagePath'], icon: IconData(j['icon'] ?? Icons.phone_android.codePoint, fontFamily: 'MaterialIcons'));
 }
-class OrderItem { String name; int qty; double price; OrderItem({required this.name, required this.qty, required this.price}); Map<String, dynamic> toJson() => {'name': name, 'qty': qty, 'price': price}; factory OrderItem.fromJson(Map<String, dynamic> j) => OrderItem(name: j['name'], qty: j['qty'], price: (j['price'] as num).toDouble()); }
+
+class OrderItem {
+  String name; int qty; double price;
+  OrderItem({required this.name, required this.qty, required this.price});
+  Map<String, dynamic> toJson() => {'name': name, 'qty': qty, 'price': price};
+  factory OrderItem.fromJson(Map<String, dynamic> j) => OrderItem(name: j['name'], qty: j['qty'], price: (j['price'] as num).toDouble());
+}
+
 class AppOrder {
   String id; String customerName; String phone; String address; String paymentMethod; String status; List<OrderItem> items; double total; String? proofPath; String date;
   AppOrder({required this.id, required this.customerName, required this.phone, required this.address, required this.paymentMethod, required this.status, required this.items, required this.total, this.proofPath, required this.date});
   Map<String, dynamic> toJson() => {'id': id, 'customerName': customerName, 'phone': phone, 'address': address, 'paymentMethod': paymentMethod, 'status': status, 'items': items.map((e) => e.toJson()).toList(), 'total': total, 'proofPath': proofPath, 'date': date};
   factory AppOrder.fromJson(Map<String, dynamic> j) => AppOrder(id: j['id'], customerName: j['customerName'], phone: j['phone'], address: j['address'], paymentMethod: j['paymentMethod'], status: j['status'], items: (j['items'] as List).map((e) => OrderItem.fromJson(e)).toList(), total: (j['total'] as num).toDouble(), proofPath: j['proofPath'], date: j['date']);
 }
-// طلب صيانة من المنزل - جديد
-class MaintenanceRequest {
-  String id; String customerName; String phone; String address; String faultType; String problem; String date; String status;
-  MaintenanceRequest({required this.id, required this.customerName, required this.phone, required this.address, required this.faultType, required this.problem, required this.date, this.status = 'جديد'});
-  Map<String, dynamic> toJson() => {'id': id, 'customerName': customerName, 'phone': phone, 'address': address, 'faultType': faultType, 'problem': problem, 'date': date, 'status': status};
-  factory MaintenanceRequest.fromJson(Map<String, dynamic> j) => MaintenanceRequest(id: j['id'], customerName: j['customerName'], phone: j['phone'], address: j['address'], faultType: j['faultType'], problem: j['problem'], date: j['date'], status: j['status'] ?? 'جديد');
+
+class RepairRequest {
+  String id; String customerName; String phone; String address; String phoneType; String problem; String kind; String date; String status;
+  RepairRequest({required this.id, required this.customerName, required this.phone, required this.address, required this.phoneType, required this.problem, required this.kind, required this.date, this.status = 'جديد'});
+  Map<String, dynamic> toJson() => {'id': id, 'customerName': customerName, 'phone': phone, 'address': address, 'phoneType': phoneType, 'problem': problem, 'kind': kind, 'date': date, 'status': status};
+  factory RepairRequest.fromJson(Map<String, dynamic> j) => RepairRequest(id: j['id'], customerName: j['customerName'], phone: j['phone'], address: j['address'], phoneType: j['phoneType'] ?? '', problem: j['problem'], kind: j['kind'] ?? 'مندوب صيانة موبايل', date: j['date'], status: j['status'] ?? 'جديد');
 }
 
 // ================= APP =================
-class OdayApp extends StatefulWidget { const OdayApp({super.key}); @override State<OdayApp> createState() => _OdayAppState(); }
+class OdayApp extends StatefulWidget {
+  const OdayApp({super.key});
+  @override
+  State<OdayApp> createState() => _OdayAppState();
+}
+
 class _OdayAppState extends State<OdayApp> {
   bool showStart = true;
   int currentIndex = 0;
   String searchText = '';
-  String selectedCategory = 'الكل';
   String storeCategory = 'الكل';
   List<OrderItem> cart = [];
   List<AppOrder> orders = [];
-  List<MaintenanceRequest> maintenanceRequests = [];
-
-  List<ServiceItem> services = [
-    ServiceItem(name: 'نجار', desc: 'تركيب وتصليح وفك وتركيب اثاث، غرف نوم، مطابخ، ابواب', icon: Icons.chair, price: 150, category: 'نجارة', rating: 4.9),
-    ServiceItem(name: 'كهربائي', desc: 'تصليح كهرباء، تركيب اضاءة، برايز، مراوح', icon: Icons.electrical_services, price: 120, category: 'كهرباء', rating: 4.8),
-  ];
-
+  List<RepairRequest> repairs = [];
   List<Product> products = [
-    Product(name: 'شاحن سريع 25 وات', desc: 'شاحن اصلي سريع، كابل تايب سي', price: 350, oldPrice: 450, isOffer: true, icon: Icons.charging_station, category: 'شواحن'),
-    Product(name: 'كابل تايب سي', desc: 'كابل شحن سريع 1 متر', price: 90, icon: Icons.cable, category: 'كابلات'),
-    Product(name: 'جراب موبايل', desc: 'جراب حماية قوي ضد الصدمات', price: 120, icon: Icons.phone_android, category: 'اكسسوارات'),
-    Product(name: 'سماعة بلوتوث', desc: 'سماعة صوت نقي وبطارية طويلة', price: 550, oldPrice: 700, isOffer: true, icon: Icons.headphones, category: 'سماعات'),
-    Product(name: 'اسكرينة حماية', desc: 'اسكرينة زجاج ضد الكسر', price: 80, icon: Icons.shield, category: 'اكسسوارات'),
-    Product(name: 'باور بانك 10000', desc: 'باور بانك سعة 10000 مللي امبير', price: 450, oldPrice: 550, isOffer: true, icon: Icons.battery_charging_full, category: 'شواحن'),
+    Product(name: 'جراب موبايل', desc: 'جراب حماية خامة نضيفة', price: 150, oldPrice: 200, category: 'جرابات', isOffer: true, icon: Icons.phone_android),
+    Product(name: 'شاحن سريع', desc: 'شاحن سريع اصلي', price: 350, oldPrice: 450, category: 'شواحن', isOffer: true, icon: Icons.charging_station),
+    Product(name: 'سماعة بلوتوث', desc: 'سماعة صوت نقي', price: 600, category: 'سماعات', icon: Icons.headphones),
+    Product(name: 'سكرينة حماية', desc: 'سكرينة ضد الكسر', price: 100, category: 'سكرينات', icon: Icons.phone_android),
+    Product(name: 'وصلة شاحن', desc: 'وصلة شحن سريع', price: 120, category: 'شواحن', icon: Icons.cable),
+    Product(name: 'حامل موبايل', desc: 'حامل للعربية والمكتب', price: 200, category: 'اكسسوارات', icon: Icons.phone_android),
   ];
 
-  @override void initState() { super.initState(); _loadAll(); }
+  List<String> storeCategories = ['الكل', 'جرابات', 'شواحن', 'سماعات', 'سكرينات', 'اكسسوارات'];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAll();
+  }
 
   Future<void> _loadAll() async {
     final prefs = await SharedPreferences.getInstance();
-    String? pStr = prefs.getString('products');
-    String? oStr = prefs.getString('orders');
-    String? mStr = prefs.getString('maintenance');
-    if (pStr != null) { try { List d = jsonDecode(pStr); setState(() { products = d.map((e) => Product.fromJson(e)).toList(); }); } catch (_) {} }
-    if (oStr != null) { try { List d = jsonDecode(oStr); setState(() { orders = d.map((e) => AppOrder.fromJson(e)).toList(); }); } catch (_) {} }
-    if (mStr != null) { try { List d = jsonDecode(mStr); setState(() { maintenanceRequests = d.map((e) => MaintenanceRequest.fromJson(e)).toList(); }); } catch (_) {} }
-  }
-  Future<void> _saveProducts() async { final p = await SharedPreferences.getInstance(); await p.setString('products', jsonEncode(products.map((e) => e.toJson()).toList())); }
-  Future<void> _saveOrders() async { final p = await SharedPreferences.getInstance(); await p.setString('orders', jsonEncode(orders.map((e) => e.toJson()).toList())); }
-  Future<void> _saveMaintenance() async { final p = await SharedPreferences.getInstance(); await p.setString('maintenance', jsonEncode(maintenanceRequests.map((e) => e.toJson()).toList())); }
-
-  void addProduct(Product p) { setState(() { products.add(p); }); _saveProducts(); }
-  void deleteProduct(int i) { setState(() { products.removeAt(i); }); _saveProducts(); }
-  void addToCart(String name, double price) {
     setState(() {
-      int i = cart.indexWhere((e) => e.name == name);
-      if (i >= 0) { cart[i].qty++; } else { cart.add(OrderItem(name: name, qty: 1, price: price)); }
+      final pStr = prefs.getString('products');
+      if (pStr != null) {
+        products = (jsonDecode(pStr) as List).map((e) => Product.fromJson(e)).toList();
+      }
+      final oStr = prefs.getString('orders');
+      if (oStr != null) {
+        orders = (jsonDecode(oStr) as List).map((e) => AppOrder.fromJson(e)).toList();
+      }
+      final rStr = prefs.getString('repairs');
+      if (rStr != null) {
+        repairs = (jsonDecode(rStr) as List).map((e) => RepairRequest.fromJson(e)).toList();
+      }
+      final cStr = prefs.getString('cart');
+      if (cStr != null) {
+        cart = (jsonDecode(cStr) as List).map((e) => OrderItem.fromJson(e)).toList();
+      }
     });
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تم اضافة $name للسلة')));
-  }
-  void onCheckout(String name, String phone, String address, String pay, String? proof) {
-    if (cart.isEmpty) return;
-    double total = cart.fold(0, (s, e) => s + e.price * e.qty);
-    setState(() {
-      orders.add(AppOrder(id: DateTime.now().millisecondsSinceEpoch.toString(), customerName: name, phone: phone, address: address, paymentMethod: pay, status: 'جديد', items: List.from(cart), total: total, proofPath: proof, date: DateTime.now().toString().substring(0, 16)));
-      cart.clear(); currentIndex = 0;
-    });
-    _saveOrders();
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم استلام طلبك بنجاح، هنتواصل معاك')));
-  }
-  void onAddMaintenance(MaintenanceRequest r) {
-    setState(() { maintenanceRequests.add(r); });
-    _saveMaintenance();
-  }
-  void openAdmin() {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => AdminPage(products: products, orders: orders, maintenanceRequests: maintenanceRequests, onAddProduct: addProduct, onDeleteProduct: deleteProduct)));
-  }
-  void openMaintenance() {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => MaintenancePage(onSubmit: (r) { onAddMaintenance(r); Navigator.pop(context); })));
   }
 
-  @override Widget build(BuildContext context) {
+  Future<void> _saveAll() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('products', jsonEncode(products.map((e) => e.toJson()).toList()));
+    await prefs.setString('orders', jsonEncode(orders.map((e) => e.toJson()).toList()));
+    await prefs.setString('repairs', jsonEncode(repairs.map((e) => e.toJson()).toList()));
+    await prefs.setString('cart', jsonEncode(cart.map((e) => e.toJson()).toList()));
+  }
+
+  double get cartTotal => cart.fold(0, (sum, e) => sum + e.price * e.qty);
+
+  List<Product> get filteredStore {
+    return products.where((p) {
+      final matchSearch = searchText.isEmpty || p.name.contains(searchText) || p.desc.contains(searchText);
+      final matchCat = storeCategory == 'الكل' || p.category == storeCategory;
+      return matchSearch && matchCat;
+    }).toList();
+  }
+
+  List<Product> get offers => products.where((p) => p.isOffer).toList();
+
+  @override
+  Widget build(BuildContext context) {
     if (showStart) {
-     if (showStart) {
-  return MaterialApp(
-    debugShowCheckedModeBanner: false,
-    home: Scaffold(
-      body: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFFF9800), Color(0xFFFF5722)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          backgroundColor: const Color(0xFF0F172A),
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(color: Colors.orange, borderRadius: BorderRadius.circular(30)),
+                    child: const Icon(Icons.phone_android, size: 70, color: Colors.white),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text('عدي فون', style: TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+                  const Text('مرحبا بكم في عدي فون', style: TextStyle(color: Colors.white, fontSize: 20)),
+                  const SizedBox(height: 10),
+                  const Text('صيانة موبايلات ومتجر اكسسوارات', style: TextStyle(color: Colors.white70, fontSize: 16), textAlign: TextAlign.center),
+                  const SizedBox(height: 30),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                      onPressed: () => setState(() => showStart = false),
+                      child: const Text('ابدأ', style: TextStyle(fontSize: 20, color: Colors.white)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.phone_android, size: 90, color: Colors.white),
-            const SizedBox(height: 16),
-            const Text("اهلا بك في", textAlign: TextAlign.center, style: TextStyle(fontSize: 22, color: Colors.white)),
-            const Text("ابليكيشن عدي فون", textAlign: TextAlign.center, style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.white)),
-            const SizedBox(height: 10),
-            const Text("خدمات صيانة ومنتجات موبايل في مكان واحد", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 16)),
-            const SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: () => setState(() => showStart = false),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.orange, padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 14)),
-              child: const Text("تسجيل الان", style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-}
+      );
     }
-    List<Product> homeFiltered = products.where((p) => searchText.isEmpty || p.name.contains(searchText) || p.desc.contains(searchText)).toList();
-    List<Product> storeFiltered = products.where((p) => (storeCategory == 'الكل' || p.category == storeCategory) && (searchText.isEmpty || p.name.contains(searchText))).toList();
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(primarySwatch: Colors.orange, fontFamily: 'Cairo', scaffoldBackgroundColor: const Color(0xFFF6F7FB)),
       home: Scaffold(
-        backgroundColor: const Color(0xFFF5F5F5),
-        appBar: AppBar(backgroundColor: Colors.orange, foregroundColor: Colors.white, title: GestureDetector(onDoubleTap: openAdmin, child: const Text('عدي فون - Oday Phone')), actions: [IconButton(icon: Badge(label: Text('${cart.length}'), child: const Icon(Icons.shopping_cart)), onPressed: () => setState(() => currentIndex = 2))]),
-        body: currentIndex == 0 ? HomePage(searchText: searchText, onSearch: (v) => setState(() => searchText = v), products: homeFiltered, services: services, onAddToCart: addToCart, onGoStore: () => setState(() => currentIndex = 1), onGoMaintenance: openMaintenance) : currentIndex == 1 ? StorePage(products: storeFiltered, searchText: searchText, onSearch: (v) => setState(() => searchText = v), category: storeCategory, onCategory: (v) => setState(() => storeCategory = v), onAddToCart: addToCart, onBuyNow: (p) { addToCart(p.name, p.price); setState(() => currentIndex = 2); }) : CartPage(cart: cart, onRemove: (i) => setState(() => cart.removeAt(i)), onInc: (i) => setState(() => cart[i].qty++), onDec: (i) => setState(() { if (cart[i].qty > 1) cart[i].qty--; }), onCheckout: onCheckout),
-        bottomNavigationBar: BottomNavigationBar(currentIndex: currentIndex, selectedItemColor: Colors.orange, onTap: (i) => setState(() => currentIndex = i), items: const [BottomNavigationBarItem(icon: Icon(Icons.home), label: 'الرئيسية'), BottomNavigationBarItem(icon: Icon(Icons.store), label: 'المتجر'), BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'السلة')]),
-      ),
-    );
-  }
-}
-
-// ================= HOME =================
-class HomePage extends StatelessWidget {
-  final String searchText; final Function(String) onSearch; final List<Product> products; final List<ServiceItem> services; final Function(String, double) onAddToCart; final VoidCallback onGoStore; final VoidCallback onGoMaintenance;
-  const HomePage({super.key, required this.searchText, required this.onSearch, required this.products, required this.services, required this.onAddToCart, required this.onGoStore, required this.onGoMaintenance});
-  @override Widget build(BuildContext context) {
-    return SingleChildScrollView(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Text('مرحبا بكم في عدي فون', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-      const SizedBox(height: 4), const Text('كل اللي محتاجه لموبايلك في مكان واحد', style: TextStyle(color: Colors.grey)),
-      const SizedBox(height: 12),
-      TextField(decoration: const InputDecoration(hintText: 'ابحث عن منتج او خدمة...', prefixIcon: Icon(Icons.search), border: OutlineInputBorder(), filled: true, fillColor: Colors.white), onChanged: onSearch),
-      const SizedBox(height: 12),
-      Row(children: [
-        Expanded(child: InkWell(onTap: onGoStore, child: Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.orange)), child: Column(children: [const CircleAvatar(backgroundColor: Colors.orange, child: Icon(Icons.store, color: Colors.white)), const SizedBox(height: 10), const Text('المتجر', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)), const Text('شواحن - اكسسوارات', style: TextStyle(fontSize: 11, color: Colors.grey))])))),
-        const SizedBox(width: 10),
-        Expanded(child: InkWell(onTap: onGoMaintenance, child: Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.blue)), child: Column(children: [const CircleAvatar(backgroundColor: Colors.blue, child: Icon(Icons.build, color: Colors.white)), const SizedBox(height: 10), const Text('اطلب صيانة من المنزل', textAlign: TextAlign.center, style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)), const Text('مندوب ياخد الجهاز ويرجعه', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, color: Colors.grey))])))),
-      ]),
-      const SizedBox(height: 12),
-      Container(width: double.infinity, padding: const EdgeInsets.all(16), decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFFFF9800), Color(0xFFFF5722)]), borderRadius: BorderRadius.circular(16)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [Text('خصومات تصل الي 30%', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)), SizedBox(height: 4), Text('على الشواحن والسماعات والاسكرينات', style: TextStyle(color: Colors.white)), SizedBox(height: 10), Text('اطلب الان من المتجر', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))])),
-      const SizedBox(height: 16),
-      const Text('خدمات اخرى من عدي فون', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-      const SizedBox(height: 12),
-      Row(children: services.map((s) => Expanded(child: Card(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), child: InkWell(onTap: () => onAddToCart(s.name, s.price), child: Padding(padding: const EdgeInsets.all(14), child: Column(children: [CircleAvatar(backgroundColor: Colors.blue.shade50, radius: 30, child: Icon(s.icon, color: Colors.blue, size: 30)), const SizedBox(height: 10), Text(s.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)), const SizedBox(height: 4), Text('من ${s.price.toStringAsFixed(0)} ج', style: const TextStyle(color: Colors.grey)), const SizedBox(height: 6), Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), decoration: BoxDecoration(color: Colors.orange, borderRadius: BorderRadius.circular(20)), child: const Text('اطلب الان', style: TextStyle(color: Colors.white))) ])))))).toList()),
-      const SizedBox(height: 16),
-      const Text('منتجات مميزة', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-      const SizedBox(height: 10),
-      ...products.take(4).map((p) => Card(child: ListTile(leading: p.imageUrl != null && p.imageUrl!.isNotEmpty ? ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.network(p.imageUrl!, width: 50, height: 50, fit: BoxFit.cover, errorBuilder: (, _, _) => Icon(p.icon))) : p.imagePath != null ? ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.file(File(p.imagePath!), width: 50, height: 50, fit: BoxFit.cover, errorBuilder: (, _, _) => Icon(p.icon))) : Icon(p.icon, color: Colors.orange), title: Text(p.name), subtitle: Text('${p.price} ج'), trailing: ElevatedButton(onPressed: () => onAddToCart(p.name, p.price), child: const Text('اضف'))))).toList(),
-    ]));
-  }
-}
-
-// ================= MAINTENANCE REQUEST PAGE =================
-class MaintenancePage extends StatefulWidget {
-  final Function(MaintenanceRequest) onSubmit;
-  const MaintenancePage({super.key, required this.onSubmit});
-  @override State<MaintenancePage> createState() => _MaintenancePageState();
-}
-class _MaintenancePageState extends State<MaintenancePage> {
-  TextEditingController nameC = TextEditingController(); TextEditingController phoneC = TextEditingController(); TextEditingController addressC = TextEditingController(); TextEditingController problemC = TextEditingController();
-  String faultType = 'صيانة موبايل';
-  @override Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('اطلب صيانة من المنزل'), backgroundColor: Colors.blue, foregroundColor: Colors.white),
-      body: SingleChildScrollView(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Container(width: double.infinity, padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(12)), child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('هنبعتلك مندوب ياخد الجهاز', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)), SizedBox(height: 4), Text('املا بياناتك، وهنكلمك ونبعت مندوب ياخد الجهاز نصلحه ونرجعهولك تاني.')])),
-        const SizedBox(height: 16),
-        const Text('نوع العطل', style: TextStyle(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 6),
-        DropdownButtonFormField(value: faultType, items: ['صيانة موبايل', 'تغيير شاشة', 'تغيير بطارية', 'سوكت شحن', 'نجارة', 'كهرباء', 'عطل اخر'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(), onChanged: (v) => setState(() => faultType = v.toString()), decoration: const InputDecoration(border: OutlineInputBorder())),
-        const SizedBox(height: 12),
-        TextField(controller: problemC, decoration: const InputDecoration(labelText: 'ايه المشكلة اللي عندك؟ اشرحها بالتفصيل', border: OutlineInputBorder(), hintText: 'مثال: الشاشة مكسورة والموبايل مش بيفتح'), maxLines: 3),
-        const SizedBox(height: 12),
-        TextField(controller: nameC, decoration: const InputDecoration(labelText: 'الاسم بالكامل', border: OutlineInputBorder())),
-        const SizedBox(height: 12),
-        TextField(controller: phoneC, decoration: const InputDecoration(labelText: 'رقم التليفون', border: OutlineInputBorder()), keyboardType: TextInputType.phone),
-        const SizedBox(height: 12),
-        TextField(controller: addressC, decoration: const InputDecoration(labelText: 'العنوان بالتفصيل - المندوب هيجيلك عليه', border: OutlineInputBorder()), maxLines: 2),
-        const SizedBox(height: 20),
-        SizedBox(width: double.infinity, child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white, padding: const EdgeInsets.all(14)), onPressed: () {
-          if (nameC.text.isEmpty || phoneC.text.isEmpty || addressC.text.isEmpty || problemC.text.isEmpty) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('اكمل كل البيانات الاول'))); return; }
-          widget.onSubmit(MaintenanceRequest(id: DateTime.now().millisecondsSinceEpoch.toString(), customerName: nameC.text, phone: phoneC.text, address: addressC.text, faultType: faultType, problem: problemC.text, date: DateTime.now().toString().substring(0, 16)));
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم استلام طلب الصيانة، هنكلمك ونبعتلك المندوب')));
-        }, child: const Text('اطلب مندوب', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)))),
-      ])),
-    );
-  }
-}
-
-// ================= STORE =================
-class StorePage extends StatelessWidget {
-  final List<Product> products; final String searchText; final Function(String) onSearch; final String category; final Function(String) onCategory; final Function(String, double) onAddToCart; final Function(Product) onBuyNow;
-  const StorePage({super.key, required this.products, required this.searchText, required this.onSearch, required this.category, required this.onCategory, required this.onAddToCart, required this.onBuyNow});
-  @override Widget build(BuildContext context) {
-    List<String> cats = ['الكل', 'شواحن', 'كابلات', 'اكسسوارات', 'سماعات'];
-    List<IconData> catIcons = [Icons.apps, Icons.charging_station, Icons.cable, Icons.phone_android, Icons.headphones];
-    return Column(children: [
-      Padding(padding: const EdgeInsets.all(12), child: TextField(decoration: const InputDecoration(hintText: 'ابحث في المتجر...', prefixIcon: Icon(Icons.search), border: OutlineInputBorder(), filled: true, fillColor: Colors.white), onChanged: onSearch)),
-      SizedBox(height: 100, child: ListView.builder(scrollDirection: Axis.horizontal, itemCount: cats.length, itemBuilder: (c, i) => Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: InkWell(onTap: () => onCategory(cats[i]), child: Container(width: 80, padding: const EdgeInsets.all(8, decoration: BoxDecoration(color: category == cats[i] ? Colors.orange : Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.orange)), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(catIcons[i], color: category == cats[i] ? Colors.white : Colors.orange), const SizedBox(height: 4), Text(cats[i], style: TextStyle(color: category == cats[i] ? Colors.white : Colors.black, fontWeight: FontWeight.bold))])))))),
-      Expanded(child: products.isEmpty ? const Center(child: Text('لا توجد منتجات في هذه الفئة')) : GridView.builder(padding: const EdgeInsets.all(12), gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 0.72, crossAxisSpacing: 10, mainAxisSpacing: 10), itemCount: products.length, itemBuilder: (context, i) {
-        Product p = products[i];
-        return Card(
-  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-  child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      ClipRRect(
-        borderRadius: BorderRadius.circular(14),
-        child: p.imagePath != null
-            ? Image.file(File(p.imagePath!), height: 120, width: 200, fit: BoxFit.cover)
-            : Container(height: 120, width: 200, color: Colors.grey[200], child: Icon(p.icon, size: 50, color: Colors.blue)),
-      ),
-      Padding(
-        padding: const EdgeInsets.all(10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
-            Text(p.desc, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-            const SizedBox(height: 4),
-            Row(
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF0F172A),
+          title: const Text('عدي فون', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          actions: [
+            Stack(
               children: [
-                Text('${p.price} ج', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
-                if (p.isOffer) Text(' ${p.oldPrice} ج', style: const TextStyle(decoration: TextDecoration.lineThrough, color: Colors.grey, fontSize: 12)),
+                IconButton(icon: const Icon(Icons.shopping_cart, color: Colors.white), onPressed: () => setState(() => currentIndex = 2)),
+                if (cart.isNotEmpty)
+                  Positioned(
+                    right: 6,
+                    top: 6,
+                    child: Container(padding: const EdgeInsets.all(4), decoration: const BoxDecoration(color: Colors.orange, shape: BoxShape.circle), child: Text('${cart.length}', style: const TextStyle(color: Colors.white, fontSize: 12))),
+                  ),
               ],
             ),
+            IconButton(icon: const Icon(Icons.admin_panel_settings, color: Colors.white), onPressed: () => _openAdmin()),
+          ],
+        ),
+        body: _buildBody(),
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: currentIndex,
+          selectedItemColor: Colors.orange,
+          unselectedItemColor: Colors.grey,
+          type: BottomNavigationBarType.fixed,
+          onTap: (i) => setState(() => currentIndex = i),
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'الرئيسية'),
+            BottomNavigationBarItem(icon: Icon(Icons.store), label: 'المتجر'),
+            BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'السلة'),
+            BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'طلباتي'),
           ],
         ),
       ),
-      Padding(
-        padding: const EdgeInsets.all(10),
-        child: Row(
-          children: [
-            Expanded(child: ElevatedButton(onPressed: () { setState(() { cart.add(OrderItem(name: p.name, qty: 1, price: p.price)); }); }, child: const Text('اضافة'))),
-            IconButton(onPressed: () { setState(() { p.isFav = !p.isFav; }); }, icon: Icon(p.isFav ? Icons.favorite : Icons.favorite_border, color: Colors.red)),
-          ],
-        ),
-      ),
-    ],
-  ),
-);
-      const SizedBox(height: 4),
-      Row(
+    );
+  }
+
+  Widget _buildBody() {
+    if (currentIndex == 1) return _buildStore();
+    if (currentIndex == 2) return _buildCart();
+    if (currentIndex == 3) return _buildMyOrders();
+    return _buildHome();
+  }
+
+  // ============ HOME ============
+  Widget _buildHome() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('${p.price} ج', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
-          if (p.isOffer) Text(' ${p.oldPrice} ج', style: const TextStyle(decoration: TextDecoration.lineThrough, color: Colors.grey, fontSize: 12)),
+          const Text('مرحبا بكم في عدي فون', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          TextField(
+            onChanged: (v) => setState(() => searchText = v),
+            decoration: InputDecoration(hintText: 'دور على جراب، شاحن، سماعة، سكرينة...', prefixIcon: const Icon(Icons.search), filled: true, fillColor: Colors.white, border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none)),
+          ),
+          const SizedBox(height: 16),
+          InkWell(
+            onTap: () => setState(() => currentIndex = 1),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.orange.withOpacity(0.3))),
+              child: Row(
+                children: [
+                  Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.orange, borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.store, color: Colors.white, size: 30)),
+                  const SizedBox(width: 12),
+                  const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('المتجر', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)), Text('جرابات وشواحن وسماعات وسكرينات', style: TextStyle(color: Colors.grey))])),
+                  const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // بوكس المندوب - الاساسي
+          InkWell(
+            onTap: () => _openRepairForm('مندوب صيانة موبايل'),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFF0F172A), Color(0xFFF97316)]), borderRadius: BorderRadius.circular(16)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(10)), child: const Icon(Icons.delivery_dining, color: Colors.white, size: 30)), const SizedBox(width: 10), const Expanded(child: Text('اطلب مندوب لصيانة تليفونك', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)))]),
+                  const SizedBox(height: 10),
+                  const Text('هنبعتلك مندوب ياخد التليفون من عندك، نصلحه، ونرجعهولك تاني لحد البيت', style: TextStyle(color: Colors.white, fontSize: 15)),
+                  const SizedBox(height: 12),
+                  Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)), child: const Text('اطلب المندوب دلوقتي', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange))),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Text('عروض المتجر', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          if (offers.isEmpty) const Text('مفيش عروض دلوقتي'),
+          ...offers.map((p) => _productCard(p)).toList(),
+          const SizedBox(height: 20),
+          const Text('خدمات أخرى', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(child: _otherServiceCard('نجارة', Icons.handyman, 'نجارة')),
+              const SizedBox(width: 12),
+              Expanded(child: _otherServiceCard('كهربائي', Icons.electrical_services, 'كهربائي')),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const Text('مفيش اي خدمات تانية غير دول', style: TextStyle(color: Colors.grey, fontSize: 12)),
         ],
       ),
-    ],
-  ),
-),
-          })), 
-    ]);
+    );
   }
-}
 
-// ================= CART + PAYMENT =================
-class CartPage extends StatefulWidget {
-  final List<OrderItem> cart; final Function(int) onRemove; final Function(int) onInc; final Function(int) onDec; final Function(String, String, String, String, String?) onCheckout;
-  const CartPage({super.key, required this.cart, required this.onRemove, required this.onInc, required this.onDec, required this.onCheckout});
-  @override State<CartPage> createState() => _CartPageState();
-}
-class _CartPageState extends State<CartPage> {
-  TextEditingController nameC = TextEditingController(); TextEditingController phoneC = TextEditingController(); TextEditingController addressC = TextEditingController();
-  String pay = 'الدفع عند الاستلام'; String? proofPath;
-  Future<void> pickProof() async { final XFile? f = await ImagePicker().pickImage(source: ImageSource.gallery); if (f != null) setState(() => proofPath = f.path); }
-  @override Widget build(BuildContext context) {
-    double total = widget.cart.fold(0, (s, e) => s + e.price * e.qty);
-    return SingleChildScrollView(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Text('سلة الطلبات', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-      const SizedBox(height: 12),
-      if (widget.cart.isEmpty) const Text('السلة فارغة، اختار من المتجر'),
-      ...widget.cart.asMap().entries.map((e) => Card(child: ListTile(title: Text(e.value.name), subtitle: Text('${e.value.price} ج'), trailing: Row(mainAxisSize: MainAxisSize.min, children: [IconButton(icon: const Icon(Icons.remove), onPressed: () => widget.onDec(e.key)), Text('${e.value.qty}'), IconButton(icon: const Icon(Icons.add), onPressed: () => widget.onInc(e.key)), IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => widget.onRemove(e.key))])))).toList(),
-      const SizedBox(height: 12),
-      Text('الاجمالي: $total ج', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-      const SizedBox(height: 16),
-      const Text('بيانات العميل', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
-      const SizedBox(height:10),
-      TextField(controller: nameC, decoration: const InputDecoration(labelText: 'الاسم بالكامل', border: OutlineInputBorder())),
-      const SizedBox(height: 10),
-      TextField(controller: phoneC, decoration: const InputDecoration(labelText: 'رقم الموبايل', border: OutlineInputBorder()), keyboardType: TextInputType.phone),
-      const SizedBox(height: 10),
-      TextField(controller: addressC, decoration: const InputDecoration(labelText: 'العنوان بالتفصيل', border: OutlineInputBorder())),
-      const SizedBox(height: 16),
-      const Text('طريقة الدفع', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
-      RadioListTile(value: 'فودافون كاش', groupValue: pay, onChanged: (v) => setState(() => pay = v.toString()), title: const Text('فودافون كاش')),
-      RadioListTile(value: 'انستا باي', groupValue: pay, onChanged: (v) => setState(() => pay = v.toString()), title: const Text('انستا باي')),
-      RadioListTile(value: 'الدفع عند الاستلام', groupValue: pay, onChanged: (v) => setState(() => pay = v.toString()), title: const Text('الدفع عند الاستلام')),
-      if (pay == 'فودافون كاش') Container(width: double.infinity, padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(12)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('حول على رقم فودافون كاش:', style: TextStyle(fontWeight: FontWeight.bold)), Text(vodafoneNumber, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.red)), const SizedBox(height: 4), const Text('بعد التحويل، ارفع سكرين شوت التحويل هنا'), const SizedBox(height: 10), ElevatedButton(onPressed: pickProof, child: Text(proofPath == null ? 'ارفع سكرين شوت التحويل' : 'تم رفع السكرين - اضغط لتغييره')), if (proofPath != null) Padding(padding: const EdgeInsets.only(top: 8, child: Image.file(File(proofPath!), height: 120)) ])),
-      if (pay == 'انستا باي') Container(width: double.infinity, padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.purple.shade50, borderRadius: BorderRadius.circular(12)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('حول على رقم انستا باي:', style: TextStyle(fontWeight: FontWeight.bold)), Text(instapayNumber, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.purple)), const SizedBox(height: 4), const Text('بعد التحويل، ارفع سكرين شوت التحويل هنا'), const SizedBox(height: 10), ElevatedButton(onPressed: pickProof, child: Text(proofPath == null ? 'ارفع سكرين شوت التحويل' : 'تم رفع السكرين - اضغط لتغييره')), if (proofPath != null) Padding(padding: const EdgeInsets.only(top: 8, child: Image.file(File(proofPath!), height: 120)) ])),
-      const SizedBox(height: 16),
-      SizedBox(width: double.infinity, child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white, padding: const EdgeInsets.all(14)), onPressed: () {
-        if (nameC.text.isEmpty || phoneC.text.isEmpty) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('اكتب الاسم والموبايل الاول'))); return; }
-        if ((pay == 'فودافون كاش' || pay == 'انستا باي') && proofPath == null) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ارفع سكرين شوت التحويل الاول'))); return; }
-        widget.onCheckout(nameC.text, phoneC.text, addressC.text, pay, proofPath);
-      }, child: const Text('تأكيد الطلب'))),
-      const SizedBox(height: 20),
-    ]));
+  Widget _otherServiceCard(String title, IconData icon, String kind) {
+    return InkWell(
+      onTap: () => _openRepairForm(kind),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+        child: Column(
+          children: [
+            Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), shape: BoxShape.circle), child: Icon(icon, size: 32, color: Colors.blue)),
+            const SizedBox(height: 10),
+            Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+            const Text('اطلب دلوقتي', style: TextStyle(color: Colors.orange, fontSize: 13)),
+          ],
+        ),
+      ),
+    );
   }
-}
 
-// ================= ADMIN =================
-class AdminPage extends StatefulWidget {
-  final List<Product> products; final List<AppOrder> orders; final List<MaintenanceRequest> maintenanceRequests; final Function(Product) onAddProduct; final Function(int) onDeleteProduct;
-  const AdminPage({super.key, required this.products, required this.orders, required this.maintenanceRequests, required this.onAddProduct, required this.onDeleteProduct});
-  @override State<AdminPage> createState() => _AdminPageState();
-}
-class _AdminPageState extends State<AdminPage> with SingleTickerProviderStateMixin {
-  late TabController tabC;
-  TextEditingController nameC = TextEditingController(); TextEditingController descC = TextEditingController(); TextEditingController priceC = TextEditingController(); TextEditingController oldC = TextEditingController(); TextEditingController linkC = TextEditingController();
-  String cat = 'شواحن'; String? pickedPath;
-  @override void initState() { super.initState(); tabC = TabController(length: 4, vsync: this); }
-  Future<void> pickFromPhone() async { final XFile? f = await ImagePicker().pickImage(source: ImageSource.gallery); if (f != null) setState(() { pickedPath = f.path; linkC.clear(); }); }
-  @override Widget build(BuildContext context) {
-    return Scaffold(appBar: AppBar(title: const Text('لوحة الادمن - عدي فون'), backgroundColor: Colors.black, foregroundColor: Colors.white, bottom: TabBar(controller: tabC, isScrollable: true, tabs: const [Tab(text: 'اضافة منتج'), Tab(text: 'المنتجات'), Tab(text: 'الطلبات'), Tab(text: 'طلبات الصيانة')])),
-      body: TabBarView(controller: tabC, children: [
-        SingleChildScrollView(padding: const EdgeInsets.all(16), child: Column(children: [
-          const Text('انزل منتج جديد', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
-          TextField(controller: nameC, decoration: const InputDecoration(labelText: 'اسم المنتج', border: OutlineInputBorder())),
+  // ============ STORE ============
+  Widget _buildStore() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: TextField(
+            onChanged: (v) => setState(() => searchText = v),
+            decoration: InputDecoration(hintText: 'دور في المتجر...', prefixIcon: const Icon(Icons.search), filled: true, fillColor: Colors.white, border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none)),
+          ),
+        ),
+        SizedBox(
+          height: 40,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            children: storeCategories.map((c) {
+              final sel = c == storeCategory;
+              return Padding(
+                padding: const EdgeInsets.only(left: 10),
+                child: ChoiceChip(label: Text(c), selected: sel, selectedColor: Colors.orange, labelStyle: TextStyle(color: sel ? Colors.white : Colors.black), onSelected: (_) => setState(() => storeCategory = c)),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Expanded(
+          child: GridView.builder(
+            padding: const EdgeInsets.all(16),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.72),
+            itemCount: filteredStore.length,
+            itemBuilder: (ctx, i) => _productCard(filteredStore[i]),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _productCard(Product p) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(color: Colors.grey[200], borderRadius: const BorderRadius.vertical(top: Radius.circular(14))),
+              child: p.imagePath != null ? ClipRRect(borderRadius: const BorderRadius.vertical(top: Radius.circular(14)), child: Image.file(File(p.imagePath!), fit: BoxFit.cover)) : Icon(p.icon, size: 50, color: Colors.blue),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(p.desc, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Text('${p.price} ج', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
+                    if (p.isOffer) Text(' ${p.oldPrice} ج', style: const TextStyle(decoration: TextDecoration.lineThrough, color: Colors.grey, fontSize: 12)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: Row(
+              children: [
+                Expanded(child: ElevatedButton(onPressed: () { setState(() { cart.add(OrderItem(name: p.name, qty: 1, price: p.price)); _saveAll(); }); }, child: const Text('اضافة'))),
+                IconButton(onPressed: () { setState(() { p.isFav = !p.isFav; _saveAll(); }); }, icon: Icon(p.isFav ? Icons.favorite : Icons.favorite_border, color: Colors.red)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============ CART ============
+  Widget _buildCart() {
+    if (cart.isEmpty) {
+      return const Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.shopping_cart_outlined, size: 70, color: Colors.grey), SizedBox(height: 10), Text('السلة فاضية')]));
+    }
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          ...cart.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final item = entry.value;
+            return Card(
+              child: ListTile(
+                title: Text(item.name),
+                subtitle: Text('${item.price} ج'),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(icon: const Icon(Icons.remove), onPressed: () { setState(() { if (item.qty > 1) { item.qty--; } else { cart.removeAt(idx); } _saveAll(); }); }),
+                    Text('${item.qty}'),
+                    IconButton(icon: const Icon(Icons.add), onPressed: () { setState(() { item.qty++; _saveAll(); }); }),
+                    IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () { setState(() { cart.removeAt(idx); _saveAll(); }); }),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
           const SizedBox(height: 10),
-          TextField(controller: descC, decoration: const InputDecoration(labelText: 'المواصفات / الوصف', border: OutlineInputBorder()), maxLines: 2),
-          const SizedBox(height: 10),
-          Row(children: [Expanded(child: TextField(controller: priceC, decoration: const InputDecoration(labelText: 'السعر', border: OutlineInputBorder()), keyboardType: TextInputType.number)), const SizedBox(width: 10, Expanded(child: TextField(controller: oldC, decoration: const InputDecoration(labelText: 'السعر القديم (اختياري)', border: OutlineInputBorder()), keyboardType: TextInputType.number))]),
-          const SizedBox(height: 10),
-          DropdownButtonFormField(value: cat, items: ['شواحن', 'كابلات', 'اكسسوارات', 'سماعات'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(), onChanged: (v) => setState(() => cat = v.toString()), decoration: const InputDecoration(labelText: 'الفئة', border: OutlineInputBorder())),
+          Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('الاجمالي', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)), Text('$cartTotal ج', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.orange))])),
           const SizedBox(height: 16),
-          const Text('صورة المنتج - اختار طريقة واحدة:', style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
-          Row(children: [Expanded(child: ElevatedButton(onPressed: pickFromPhone, child: const Text('صورة من التليفون'))), const SizedBox(width: 10, Expanded(child: ElevatedButton(onPressed: () { if (linkC.text.isNotEmpty) setState(() => pickedPath = null); }, style: ElevatedButton.styleFrom(backgroundColor: Colors.blue), child: const Text('استخدم اللينك')))]),
-          const SizedBox(height: 10),
-          if (pickedPath != null) ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.file(File(pickedPath!), height: 140)),
-          TextField(controller: linkC, decoration: const InputDecoration(labelText: 'او الصق لينك الصورة هنا', border: OutlineInputBorder(), hintText: 'https://...')),
-          if (linkC.text.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8, child: Image.network(linkC.text, height: 140, errorBuilder: (, _, _) => const Text('اللينك مش شغال'))),
-          const SizedBox(height: 16),
-          SizedBox(width: double.infinity, child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white, padding: const EdgeInsets.all(14)), onPressed: () {
-            if (nameC.text.isEmpty || priceC.text.isEmpty) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('اكتب الاسم والسعر'))); return; }
-            IconData ic = cat == 'شواحن' ? Icons.charging_station : cat == 'كابلات' ? Icons.cable : cat == 'سماعات' ? Icons.headphones : Icons.phone_android;
-            widget.onAddProduct(Product(name: nameC.text, desc: descC.text, price: double.tryParse(priceC.text) ?? 0, oldPrice: double.tryParse(oldC.text) ?? 0, isOffer: oldC.text.isNotEmpty, icon: ic, category: cat, imagePath: pickedPath, imageUrl: linkC.text.isEmpty ? null : linkC.text));
-            nameC.clear(); descC.clear(); priceC.clear(); oldC.clear(); linkC.clear(); setState(() => pickedPath = null);
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حفظ المنتج وهيظهر للعملاء')));
-          }, child: const Text('حفظ المنتج'))),
-        ])),
-        ListView.builder(itemCount: widget.products.length, itemBuilder: (c, i) { Product p = widget.products[i]; return Card(child: ListTile(title: Text(p.name), subtitle: Text('${p.price} ج - ${p.category}'), trailing: IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => widget.onDeleteProduct(i)))); }),
-        widget.orders.isEmpty ? const Center(child: Text('لسه مفيش طلبات')) : ListView.builder(itemCount: widget.orders.length, itemBuilder: (c, i) { AppOrder o = widget.orders[i]; return Card(margin: const EdgeInsets.all(10), child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('${o.customerName} - ${o.phone}', style: const TextStyle(fontWeight: FontWeight.bold)), Text('العنوان: ${o.address}'), Text('الدفع: ${o.paymentMethod} - الاجمالي: ${o.total} ج'), Text('المنتجات: ${o.items.map((e) => '${e.name} x${e.qty}').join(' , ')}'), if (o.proofPath != null) Padding(padding: const EdgeInsets.only(top: 8, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('سكرين شوت التحويل:'), const SizedBox(height: 4), Image.file(File(o.proofPath!), height: 180)])) ]))); }),
-        widget.maintenanceRequests.isEmpty ? const Center(child: Text('لسه مفيش طلبات صيانة')) : ListView.builder(itemCount: widget.maintenanceRequests.length, itemBuilder: (c, i) { MaintenanceRequest r = widget.maintenanceRequests[i]; return Card(margin: const EdgeInsets.all(10), color: Colors.blue.shade50, child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [const Icon(Icons.build, color: Colors.blue), const SizedBox(width: 6), Expanded(child: Text('${r.customerName} - ${r.phone}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)))]), const SizedBox(height: 6), Text('نوع العطل: ${r.faultType}'), Text('المشكلة: ${r.problem}'), Text('العنوان: ${r.address}'), Text('التاريخ: ${r.date}'), const SizedBox(height: 10, Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)), child: const Text('كلم العميل وقوله: هبعتلك مندوب ياخد الجهاز نصلحه ونرجعه تاني', style: TextStyle(color: Colors.blue))) ]))); }),
-      ]));
+          _checkoutForm(),
+        ],
+      ),
+    );
+  }
+
+  Widget _checkoutForm() {
+    final nameC = TextEditingController();
+    final phoneC = TextEditingController();
+    final addrC = TextEditingController();
+    String method = 'كاش عند الاستلام';
+    String? proofPath;
+    return StatefulBuilder(
+      builder: (ctx, setLocal) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('بيانات التوصيل والدفع', style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              TextField(controller: nameC, decoration: const InputDecoration(labelText: 'اسم العميل', border: OutlineInputBorder())),
+              const SizedBox(height: 10),
+              TextField(controller: phoneC, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'رقم التليفون', border: OutlineInputBorder())),
+              const SizedBox(height: 10),
+              TextField(controller: addrC, decoration: const InputDecoration(labelText: 'العنوان', border: OutlineInputBorder())),
+              const SizedBox(height: 12),
+              const Text('طريقة الدفع'),
+              RadioListTile(value: 'كاش عند الاستلام', groupValue: method, title: const Text('كاش عند الاستلام'), onChanged: (v) => setLocal(() => method = v.toString())),
+              RadioListTile(value: 'فودافون كاش', groupValue: method, title: const Text('فودافون كاش'), onChanged: (v) => setLocal(() => method = v.toString())),
+              RadioListTile(value: 'انستا باي', groupValue: method, title: const Text('انستا باي'), onChanged: (v) => setLocal(() => method = v.toString())),
+              if (method != 'كاش عند الاستلام') ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                  child: Column(
+                    children: [
+                      Row(children: [Expanded(child: Text('حول على: ${method == 'فودافون كاش' ? vodafoneNumber : instapayNumber}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))), IconButton(icon: const Icon(Icons.copy), onPressed: () { Clipboard.setData(ClipboardData(text: method == 'فودافون كاش' ? vodafoneNumber : instapayNumber)); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم نسخ الرقم'))); })]),
+                      const SizedBox(height: 10),
+                      ElevatedButton.icon(onPressed: () async { final picker = ImagePicker(); final x = await picker.pickImage(source: ImageSource.gallery); if (x != null) { setLocal(() => proofPath = x.path); } }, icon: const Icon(Icons.upload), label: Text(proofPath == null ? 'ارفع صورة التحويل' : 'تم رفع الصورة')),
+                      if (proofPath != null) Padding(padding: const EdgeInsets.only(top: 10), child: Image.file(File(proofPath!), height: 120)),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, padding: const EdgeInsets.symmetric(vertical: 14)),
+                  onPressed: () {
+                    if (nameC.text.isEmpty || phoneC.text.isEmpty || addrC.text.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('كمل بياناتك الاول')));
+                      return;
+                    }
+                    setState(() {
+                      orders.add(AppOrder(id: DateTime.now().millisecondsSinceEpoch.toString(), customerName: nameC.text, phone: phoneC.text, address: addrC.text, paymentMethod: method, status: 'جديد', items: List.from(cart), total: cartTotal, proofPath: proofPath, date: DateTime.now().toString().substring(0, 10)));
+                      cart.clear();
+                      _saveAll();
+                      currentIndex = 3;
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم استلام طلبك وهنكلمك')));
+                  },
+                  child: const Text('تأكيد الطلب', style: TextStyle(color: Colors.white, fontSize: 17)),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMyOrders() {
+    if (orders.isEmpty && repairs.isEmpty) {
+      return const Center(child: Text('لسه مفيش طلبات'));
+    }
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        const Text('طلبات المتجر', style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 10),
+        ...orders.map((o) => Card(child: ListTile(title: Text('طلب رقم ${o.id.substring(o.id.length - 4)}'), subtitle: Text('${o.total} ج - ${o.status} - ${o.date}'), trailing: Text(o.paymentMethod)))).toList(),
+        const SizedBox(height: 20),
+        const Text('طلبات المندوب والخدمات', style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 10),
+        ...repairs.map((r) => Card(child: ListTile(title: Text('${r.kind} - ${r.customerName}'), subtitle: Text('${r.problem} - ${r.status}'), trailing: Text(r.date)))).toList(),
+      ],
+    );
+  }
+
+  // ============ REPAIR FORM ============
+  void _openRepairForm(String kind) {
+    final nameC = TextEditingController();
+    final phoneC = TextEditingController();
+    final addrC = TextEditingController();
+    final typeC = TextEditingController();
+    final probC = TextEditingController();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 16, right: 16, top: 20),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(kind == 'مندوب صيانة موبايل' ? 'اطلب مندوب لصيانة تليفونك' : 'طلب $kind', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                if (kind == 'مندوب صيانة موبايل') const Text('هنبعتلك مندوب ياخد التليفون من عندك، نصلحه، ونرجعهولك تاني لحد البيت', style: TextStyle(color: Colors.grey)),
+                const SizedBox(height: 16),
+                TextField(controller: nameC, decoration: const InputDecoration(labelText: 'اسم العميل', border: OutlineInputBorder())),
+                const SizedBox(height: 10),
+                TextField(controller: phoneC, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'رقم التليفون', border: OutlineInputBorder())),
+                const SizedBox(height: 10),
+                TextField(controller: addrC, decoration: const InputDecoration(labelText: 'العنوان', border: OutlineInputBorder())),
+                const SizedBox(height: 10),
+                if (kind == 'مندوب صيانة موبايل') ...[TextField(controller: typeC, decoration: const InputDecoration(labelText: 'نوع التليفون - مثال: سامسونج، ايفون', border: OutlineInputBorder())), const SizedBox(height: 10)],
+                TextField(controller: probC, maxLines: 3, decoration: InputDecoration(labelText: kind == 'مندوب صيانة موبايل' ? 'ايه المشكلة في التليفون؟' : 'ايه الشغل المطلوب؟', border: const OutlineInputBorder())),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, padding: const EdgeInsets.symmetric(vertical: 14)),
+                    onPressed: () {
+                      if (nameC.text.isEmpty || phoneC.text.isEmpty || addrC.text.isEmpty || probC.text.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('كمل بياناتك الاول')));
+                        return;
+                      }
+                      setState(() {
+                        repairs.add(RepairRequest(id: DateTime.now().millisecondsSinceEpoch.toString(), customerName: nameC.text, phone: phoneC.text, address: addrC.text, phoneType: typeC.text, problem: probC.text, kind: kind, date: DateTime.now().toString().substring(0, 10)));
+                        _saveAll();
+                      });
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم استلام طلبك وهنكلمك نحدد معاد المندوب')));
+                    },
+                    child: const Text('ارسال الطلب', style: TextStyle(color: Colors.white, fontSize: 17)),
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ============ ADMIN ============
+  void _openAdmin() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx2, setLocal) {
+            return DefaultTabController(
+              length: 3,
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height * 0.9,
+                child: Column(
+                  children: [
+                    const TabBar(tabs: [Tab(text: 'طلبات المتجر'), Tab(text: 'طلبات المندوب'), Tab(text: 'المنتجات')]),
+                    Expanded(
+                      child: TabBarView(
+                        children: [
+                          ListView(padding: const EdgeInsets.all(12), children: orders.map((o) => Card(child: ListTile(title: Text('${o.customerName} - ${o.total} ج'), subtitle: Text('${o.phone}\n${o.address}\n${o.paymentMethod}\n${o.items.map((e) => '${e.name} x${e.qty}').join(', ')}'), trailing: DropdownButton<String>(value: o.status, items: ['جديد', 'قيد التنفيذ', 'تم'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(), onChanged: (v) { setState(() { o.status = v!; _saveAll(); }); setLocal(() {}); })))) .toList()),
+                          ListView(padding: const EdgeInsets.all(12), children: repairs.map((r) => Card(child: ListTile(title: Text('${r.kind} - ${r.customerName}'), subtitle: Text('${r.phone}\n${r.address}\n${r.phoneType}\n${r.problem}'), trailing: DropdownButton<String>(value: r.status, items: ['جديد', 'تم استلام التليفون', 'جاري الصيانة', 'تم التسليم', 'تم التواصل', 'تم التنفيذ'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(), onChanged: (v) { setState(() { r.status = v!; _saveAll(); }); setLocal(() {}); })))) .toList()),
+                          ListView(
+                            padding: const EdgeInsets.all(12),
+                            children: [
+                              ElevatedButton(onPressed: () => _addProductDialog(setLocal), child: const Text('اضافة منتج جديد')),
+                              const SizedBox(height: 10),
+                              ...products.map((p) => Card(child: ListTile(title: Text(p.name), subtitle: Text('${p.price} ج - ${p.category}'), trailing: IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () { setState(() { products.remove(p); _saveAll(); }); setLocal(() {}); })))).toList(),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _addProductDialog(Function setLocalAdmin) {
+    final nameC = TextEditingController();
+    final descC = TextEditingController();
+    final priceC = TextEditingController();
+    final oldC = TextEditingController();
+    String cat = 'جرابات';
+    bool isOffer = false;
+    String? imgPath;
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx2, setD) {
+            return AlertDialog(
+              title: const Text('اضافة منتج جديد'),
+              content: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    TextField(controller: nameC, decoration: const InputDecoration(labelText: 'اسم المنتج')),
+                    TextField(controller: descC, decoration: const InputDecoration(labelText: 'الوصف')),
+                    TextField(controller: priceC, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'السعر')),
+                    TextField(controller: oldC, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'السعر القديم لو عليه خصم')),
+                    DropdownButton<String>(value: cat, isExpanded: true, items: storeCategories.where((e) => e != 'الكل').map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(), onChanged: (v) => setD(() => cat = v!)),
+                    CheckboxListTile(value: isOffer, title: const Text('عليه خصم؟'), onChanged: (v) => setD(() => isOffer = v!)),
+                    ElevatedButton.icon(onPressed: () async { final picker = ImagePicker(); final x = await picker.pickImage(source: ImageSource.gallery); if (x != null) setD(() => imgPath = x.path); }, icon: const Icon(Icons.image), label: Text(imgPath == null ? 'اختر صورة' : 'تم اختيار الصورة')),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('الغاء')),
+                ElevatedButton(
+                  onPressed: () {
+                    if (nameC.text.isEmpty || priceC.text.isEmpty) return;
+                    setState(() {
+                      products.add(Product(name: nameC.text, desc: descC.text, price: double.tryParse(priceC.text) ?? 0, oldPrice: double.tryParse(oldC.text) ?? 0, category: cat, isOffer: isOffer, imagePath: imgPath, icon: Icons.phone_android));
+                      _saveAll();
+                    });
+                    Navigator.pop(ctx);
+                    setLocalAdmin(() {});
+                  },
+                  child: const Text('اضافة'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 }
