@@ -10,9 +10,9 @@ void main() { runApp(const OdayApp()); }
 // ================= MODELS =================
 class ServiceItem {
   String name; String desc; IconData icon; double price; String category; double rating; bool isFav;
-  ServiceItem({required this.name, required this.desc, required this.icon, required this.price, required this.category, this.rating = 4.8), this.isFav = false});
+  ServiceItem({required this.name, required this.desc, required this.icon, required this.price, required this.category, this.rating = 4.8 ), this.isFav = false});
   Map<String, dynamic> toJson() => {'name': name, 'desc': desc, 'price': price, 'category': category, 'rating': rating, 'isFav': isFav, 'icon': icon.codePoint};
-  factory ServiceItem.fromJson(Map<String, dynamic> j) => ServiceItem(name: j['name'], desc: j['desc'], price: (j['price'] as num).toDouble(), category: j['category'], rating: (j['rating'] as num?)?.toDouble() ?? 4.8, isFav: j['isFav'] ?? false, icon: IconData(j['icon'] ?? Icons.build.codePoint, fontFamily: 'MaterialIcons'));
+  factory ServiceItem.fromJson(Map<String, dynamic> j) => ServiceItem(name: j['name'], desc: j['desc'], price: (j['price'] as num).toDouble(), category: j['category'], rating: (j['rating'] as num?)?.toDouble() ?? 4.8 ), isFav: j['isFav'] ?? false, icon: IconData(j['icon'] ?? Icons.build.codePoint, fontFamily: 'MaterialIcons'));
 }
 class Product {
   String name; String desc; double price; String? imagePath; String? imageUrl; IconData icon; String category; bool isOffer; double oldPrice; bool isFav;
@@ -37,7 +37,7 @@ class _OdayAppState extends State<OdayApp> {
   String selectedCategory = 'الكل';
   List<ServiceItem> services = [
     ServiceItem(name: 'نجار', desc: 'تركيب وتصليح وفك وتركيب اثاث، غرف نوم، مطابخ، ابواب', icon: Icons.chair, price: 150, category: 'نجارة', rating: 4.9),
-    ServiceItem(name: 'كهربائي', desc: 'تصليح كهرباء، تركيب اضاءة، برايز، مراوح', icon: Icons.electrical_services, price: 120, category: 'كهرباء', rating: 4.😎,
+    ServiceItem(name: 'كهربائي', desc: 'تصليح كهرباء، تركيب اضاءة، برايز، مراوح', icon: Icons.electrical_services, price: 120, category: 'كهرباء', rating: 4.8 ),
     ServiceItem(name: 'صيانة موبايل', desc: 'تغيير شاشة، بطارية، سوكت شحن، صيانة شاملة', icon: Icons.phone_android, price: 100, category: 'موبايل', rating: 5.0),
   ];
   List<Product> products = [
