@@ -110,7 +110,41 @@ class _OdayAppState extends State<OdayApp> {
 
   @override Widget build(BuildContext context) {
     if (showStart) {
-      return MaterialApp(debugShowCheckedModeBanner: false, home: Scaffold(body: Container(width: double.infinity, padding: const EdgeInsets.all(24), decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFFFF9800), Color(0xFFFF5722)], begin: Alignment.topCenter, end: Alignment.bottomCenter)), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [const Icon(Icons.phone_android, size: 90, color: Colors.white), const SizedBox(height: 16), const Text('اهلا بك في', textAlign: TextAlign.center, style: TextStyle(fontSize: 22, color: Colors.white)), const Text('ابليكيشن عدي فون', textAlign: TextAlign.center, style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.white)), const SizedBox(height: 8, const Text('خدمات صيانة ومنتجات موبايل في مكان واحد', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 16)), const SizedBox(height: 30), ElevatedButton(onPressed: () => setState(() => showStart = false), style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.orange, padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 14)), child: const Text('تسجيل الان', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)))]))));
+     if (showStart) {
+  return MaterialApp(
+    debugShowCheckedModeBanner: false,
+    home: Scaffold(
+      body: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFFF9800), Color(0xFFFF5722)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.phone_android, size: 90, color: Colors.white),
+            const SizedBox(height: 16),
+            const Text("اهلا بك في", textAlign: TextAlign.center, style: TextStyle(fontSize: 22, color: Colors.white)),
+            const Text("ابليكيشن عدي فون", textAlign: TextAlign.center, style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.white)),
+            const SizedBox(height: 10),
+            const Text("خدمات صيانة ومنتجات موبايل في مكان واحد", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 16)),
+            const SizedBox(height: 30),
+            ElevatedButton(
+              onPressed: () => setState(() => showStart = false),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.orange, padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 14)),
+              child: const Text("تسجيل الان", style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
     }
     List<Product> homeFiltered = products.where((p) => searchText.isEmpty || p.name.contains(searchText) || p.desc.contains(searchText)).toList();
     List<Product> storeFiltered = products.where((p) => (storeCategory == 'الكل' || p.category == storeCategory) && (searchText.isEmpty || p.name.contains(searchText))).toList();
