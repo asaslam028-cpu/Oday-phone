@@ -150,7 +150,7 @@ class HomePage extends StatelessWidget {
       Row(children: services.map((s) => Expanded(child: Card(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), child: InkWell(onTap: () => onAddToCart(s.name, s.price), child: Padding(padding: const EdgeInsets.all(14), child: Column(children: [CircleAvatar(backgroundColor: Colors.blue.shade50, radius: 30, child: Icon(s.icon, color: Colors.blue, size: 30)), const SizedBox(height: 😎, Text(s.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)), const SizedBox(height: 4), Text('من ${s.price.toStringAsFixed(0)} ج', style: const TextStyle(color: Colors.grey)), const SizedBox(height: 6), Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), decoration: BoxDecoration(color: Colors.orange, borderRadius: BorderRadius.circular(20)), child: const Text('اطلب الان', style: TextStyle(color: Colors.white))) ])))))).toList()),
       const SizedBox(height: 16),
       const Text('منتجات مميزة', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-      const SizedBox(height: 😎,
+      const SizedBox(height: 8),
       ...products.take(4).map((p) => Card(child: ListTile(leading: p.imageUrl != null && p.imageUrl!.isNotEmpty ? ClipRRect(borderRadius: BorderRadius.circular(😎, child: Image.network(p.imageUrl!, width: 50, height: 50, fit: BoxFit.cover, errorBuilder: (, _, _) => Icon(p.icon))) : p.imagePath != null ? ClipRRect(borderRadius: BorderRadius.circular(😎, child: Image.file(File(p.imagePath!), width: 50, height: 50, fit: BoxFit.cover, errorBuilder: (, _, _) => Icon(p.icon))) : Icon(p.icon, color: Colors.orange), title: Text(p.name), subtitle: Text('${p.price} ج'), trailing: ElevatedButton(onPressed: () => onAddToCart(p.name, p.price), child: const Text('اضف'))))).toList(),
     ]));
   }
@@ -207,7 +207,7 @@ class StorePage extends StatelessWidget {
         Product p = products[i];
         return Card(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Expanded(child: Container(width: double.infinity, decoration: const BoxDecoration(color: Color(0xFFFFF3E0), borderRadius: BorderRadius.only(topLeft: Radius.circular(14), topRight: Radius.circular(14))), child: p.imageUrl != null && p.imageUrl!.isNotEmpty ? ClipRRect(borderRadius: const BorderRadius.only(topLeft: Radius.circular(14), topRight: Radius.circular(14)), child: Image.network(p.imageUrl!, fit: BoxFit.cover, width: double.infinity, errorBuilder: (, _, _) => Icon(p.icon, size: 50, color: Colors.orange))) : p.imagePath != null ? ClipRRect(borderRadius: const BorderRadius.only(topLeft: Radius.circular(14), topRight: Radius.circular(14)), child: Image.file(File(p.imagePath!), fit: BoxFit.cover, width: double.infinity, errorBuilder: (, _, _) => Icon(p.icon, size: 50, color: Colors.orange))) : Icon(p.icon, size: 50, color: Colors.orange))),
-          Padding(padding: const EdgeInsets.all(😎, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis), Text(p.desc, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.grey, fontSize: 12)), const SizedBox(height: 4), Row(children: [Text('${p.price} ج', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)), if (p.isOffer) Text(' ${p.oldPrice} ج', style: const TextStyle(decoration: TextDecoration.lineThrough, color: Colors.grey, fontSize: 12))]), const SizedBox(height: 6), Row(children: [Expanded(child: ElevatedButton(onPressed: () => onAddToCart(p.name, p.price), style: ElevatedButton.styleFrom(padding: EdgeInsets.zero), child: const Text('اضف'))), const SizedBox(width: 4), Expanded(child: ElevatedButton(onPressed: () => onBuyNow(p), style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white, padding: EdgeInsets.zero), child: const Text('اشتري الان')))]),
+          Padding(padding: const EdgeInsets.all(8, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis), Text(p.desc, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.grey, fontSize: 12)), const SizedBox(height: 4), Row(children: [Text('${p.price} ج', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)), if (p.isOffer) Text(' ${p.oldPrice} ج', style: const TextStyle(decoration: TextDecoration.lineThrough, color: Colors.grey, fontSize: 12))]), const SizedBox(height: 6), Row(children: [Expanded(child: ElevatedButton(onPressed: () => onAddToCart(p.name, p.price), style: ElevatedButton.styleFrom(padding: EdgeInsets.zero), child: const Text('اضف'))), const SizedBox(width: 4), Expanded(child: ElevatedButton(onPressed: () => onBuyNow(p), style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white, padding: EdgeInsets.zero), child: const Text('اشتري الان')))]),
         ]));
       })),
     ]);
@@ -235,11 +235,11 @@ class _CartPageState extends State<CartPage> {
       Text('الاجمالي: $total ج', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
       const SizedBox(height: 16),
       const Text('بيانات العميل', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
-      const SizedBox(height: 😎,
+      const SizedBox(height:8),
       TextField(controller: nameC, decoration: const InputDecoration(labelText: 'الاسم بالكامل', border: OutlineInputBorder())),
-      const SizedBox(height: 😎,
+      const SizedBox(height: 8),
       TextField(controller: phoneC, decoration: const InputDecoration(labelText: 'رقم الموبايل', border: OutlineInputBorder()), keyboardType: TextInputType.phone),
-      const SizedBox(height: 😎,
+      const SizedBox(height: 8),
       TextField(controller: addressC, decoration: const InputDecoration(labelText: 'العنوان بالتفصيل', border: OutlineInputBorder())),
       const SizedBox(height: 16),
       const Text('طريقة الدفع', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
@@ -278,20 +278,20 @@ class _AdminPageState extends State<AdminPage> with SingleTickerProviderStateMix
           const Text('انزل منتج جديد', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           TextField(controller: nameC, decoration: const InputDecoration(labelText: 'اسم المنتج', border: OutlineInputBorder())),
-          const SizedBox(height: 😎,
+          const SizedBox(height: 8),
           TextField(controller: descC, decoration: const InputDecoration(labelText: 'المواصفات / الوصف', border: OutlineInputBorder()), maxLines: 2),
-          const SizedBox(height: 😎,
+          const SizedBox(height: 8),
           Row(children: [Expanded(child: TextField(controller: priceC, decoration: const InputDecoration(labelText: 'السعر', border: OutlineInputBorder()), keyboardType: TextInputType.number)), const SizedBox(width: 😎, Expanded(child: TextField(controller: oldC, decoration: const InputDecoration(labelText: 'السعر القديم (اختياري)', border: OutlineInputBorder()), keyboardType: TextInputType.number))]),
-          const SizedBox(height: 😎,
+          const SizedBox(height: 8),
           DropdownButtonFormField(value: cat, items: ['شواحن', 'كابلات', 'اكسسوارات', 'سماعات'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(), onChanged: (v) => setState(() => cat = v.toString()), decoration: const InputDecoration(labelText: 'الفئة', border: OutlineInputBorder())),
           const SizedBox(height: 16),
           const Text('صورة المنتج - اختار طريقة واحدة:', style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 😎,
+          const SizedBox(height: 8),
           Row(children: [Expanded(child: ElevatedButton(onPressed: pickFromPhone, child: const Text('صورة من التليفون'))), const SizedBox(width: 😎, Expanded(child: ElevatedButton(onPressed: () { if (linkC.text.isNotEmpty) setState(() => pickedPath = null); }, style: ElevatedButton.styleFrom(backgroundColor: Colors.blue), child: const Text('استخدم اللينك')))]),
-          const SizedBox(height: 😎,
+          const SizedBox(height: 8),
           if (pickedPath != null) ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.file(File(pickedPath!), height: 140)),
           TextField(controller: linkC, decoration: const InputDecoration(labelText: 'او الصق لينك الصورة هنا', border: OutlineInputBorder(), hintText: 'https://...')),
-          if (linkC.text.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 😎, child: Image.network(linkC.text, height: 140, errorBuilder: (, _, _) => const Text('اللينك مش شغال'))),
+          if (linkC.text.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8, child: Image.network(linkC.text, height: 140, errorBuilder: (, _, _) => const Text('اللينك مش شغال'))),
           const SizedBox(height: 16),
           SizedBox(width: double.infinity, child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white, padding: const EdgeInsets.all(14)), onPressed: () {
             if (nameC.text.isEmpty || priceC.text.isEmpty) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('اكتب الاسم والسعر'))); return; }
