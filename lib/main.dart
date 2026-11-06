@@ -185,7 +185,7 @@ class HomePage extends StatelessWidget {
       const SizedBox(height: 16),
       const Text('منتجات مميزة', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
       const SizedBox(height: 10),
-      ...products.take(4).map((p) => Card(child: ListTile(leading: p.imageUrl != null && p.imageUrl!.isNotEmpty ? ClipRRect(borderRadius: BorderRadius.circular(8, child: Image.network(p.imageUrl!, width: 50, height: 50, fit: BoxFit.cover, errorBuilder: (, _, _) => Icon(p.icon))) : p.imagePath != null ? ClipRRect(borderRadius: BorderRadius.circular(8, child: Image.file(File(p.imagePath!), width: 50, height: 50, fit: BoxFit.cover, errorBuilder: (, _, _) => Icon(p.icon))) : Icon(p.icon, color: Colors.orange), title: Text(p.name), subtitle: Text('${p.price} ج'), trailing: ElevatedButton(onPressed: () => onAddToCart(p.name, p.price), child: const Text('اضف'))))).toList(),
+      ...products.take(4).map((p) => Card(child: ListTile(leading: p.imageUrl != null && p.imageUrl!.isNotEmpty ? ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.network(p.imageUrl!, width: 50, height: 50, fit: BoxFit.cover, errorBuilder: (, _, _) => Icon(p.icon))) : p.imagePath != null ? ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.file(File(p.imagePath!), width: 50, height: 50, fit: BoxFit.cover, errorBuilder: (, _, _) => Icon(p.icon))) : Icon(p.icon, color: Colors.orange), title: Text(p.name), subtitle: Text('${p.price} ج'), trailing: ElevatedButton(onPressed: () => onAddToCart(p.name, p.price), child: const Text('اضف'))))).toList(),
     ]));
   }
 }
