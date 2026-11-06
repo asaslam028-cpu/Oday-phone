@@ -4,8 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'firebase_options.dart';
 
-void main() { runApp(const OdayApp()); }
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  runApp(const OdayApp());
+}
 
 const String vodafoneNumber = '01015519180';
 const String instapayNumber = '01069068091';
@@ -104,6 +113,22 @@ class _OdayAppState extends State<OdayApp> {
     await prefs.setString('orders', jsonEncode(orders.map((e) => e.toJson()).toList()));
     await prefs.setString('repairs', jsonEncode(repairs.map((e) => e.toJson()).toList()));
     await prefs.setString('cart', jsonEncode(cart.map((e) => e.toJson()).toList()));
+  }
+
+  Future<void> _saveOrderToFirebase(AppOrder o) async {
+    try {
+      await FirebaseFirestore.instance.collection('orders').add(o.toJson());
+    } catch (e) {
+      debugPrint('Firebase order error: $e');
+    }
+  }
+
+  Future<void> _saveRepairToFirebase(RepairRequest r) async {
+    try {
+      await FirebaseFirestore.instance.collection('repairs').add(r.toJson());
+    } catch (e) {
+      debugPrint('Firebase repair error: $e');
+    }
   }
 
   double get cartTotal => cart.fold(0, (sum, e) => sum + e.price * e.qty);
@@ -396,17 +421,19 @@ class _OdayAppState extends State<OdayApp> {
                 width: double.infinity,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, padding: const EdgeInsets.symmetric(vertical: 14)),
-                  onPressed: () {
+                  onPressed: () async {
                     if (nameC.text.isEmpty || phoneC.text.isEmpty || addrC.text.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('كمل بياناتك الاول')));
                       return;
                     }
+                    final newOrder = AppOrder(id: DateTime.now().millisecondsSinceEpoch.toString(), customerName: nameC.text, phone: phoneC.text, address: addrC.text, paymentMethod: method, status: 'جديد', items: List.from(cart), total: cartTotal, proofPath: proofPath, date: DateTime.now().toString().substring(0, 10));
                     setState(() {
-                      orders.add(AppOrder(id: DateTime.now().millisecondsSinceEpoch.toString(), customerName: nameC.text, phone: phoneC.text, address: addrC.text, paymentMethod: method, status: 'جديد', items: List.from(cart), total: cartTotal, proofPath: proofPath, date: DateTime.now().toString().substring(0, 10)));
+                      orders.add(newOrder);
                       cart.clear();
                       _saveAll();
                       currentIndex = 3;
                     });
+                    await _saveOrderToFirebase(newOrder);
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم استلام طلبك وهنكلمك')));
                   },
                   child: const Text('تأكيد الطلب', style: TextStyle(color: Colors.white, fontSize: 17)),
@@ -471,15 +498,17 @@ class _OdayAppState extends State<OdayApp> {
                   width: double.infinity,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, padding: const EdgeInsets.symmetric(vertical: 14)),
-                    onPressed: () {
+                    onPressed: () async {
                       if (nameC.text.isEmpty || phoneC.text.isEmpty || addrC.text.isEmpty || probC.text.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('كمل بياناتك الاول')));
                         return;
                       }
+                      final newRepair = RepairRequest(id: DateTime.now().millisecondsSinceEpoch.toString(), customerName: nameC.text, phone: phoneC.text, address: addrC.text, phoneType: typeC.text, problem: probC.text, kind: kind, date: DateTime.now().toString().substring(0, 10));
                       setState(() {
-                        repairs.add(RepairRequest(id: DateTime.now().millisecondsSinceEpoch.toString(), customerName: nameC.text, phone: phoneC.text, address: addrC.text, phoneType: typeC.text, problem: probC.text, kind: kind, date: DateTime.now().toString().substring(0, 10)));
+                        repairs.add(newRepair);
                         _saveAll();
                       });
+                      await _saveRepairToFirebase(newRepair);
                       Navigator.pop(ctx);
                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم استلام طلبك وهنكلمك نحدد معاد المندوب')));
                     },
