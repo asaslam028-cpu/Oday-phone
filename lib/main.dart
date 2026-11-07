@@ -222,6 +222,7 @@ class _OdayHomeState extends State<OdayHome> {
       const Duration(seconds: 2),
       (t) {
         if (!mounted || heroImages.isEmpty) return;
+        if (showStart || currentIndex != 0) return;
         if (heroVideoUrl.isNotEmpty) return;
         heroIndex = (heroIndex + 1) % heroImages.length;
         if (_heroController.hasClients) {
