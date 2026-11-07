@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -25,6 +26,28 @@ const Color navyDark = Color(0xFF071224);
 const Color accentOrange = Color(0xFFFF7A00);
 const Color accentBlue = Color(0xFF38BDF6);
 const Color accentGreen = Color(0xFF22C55E);
+
+Future<String?> uploadImageToStorage(File file, String folder) async {
+  try {
+    final ref = FirebaseStorage.instance.ref().child('$folder/${DateTime.now().millisecondsSinceEpoch}.jpg');
+    await ref.putFile(file);
+    final url = await ref.getDownloadURL();
+    return url;
+  } catch (e) {
+    debugPrint('Upload error: $e');
+    return null;
+  }
+}
+
+Widget buildImageWidget(String? path, {double? height, double? width, BoxFit fit = BoxFit.cover}) {
+  if (path == null || path.isEmpty) {
+    return Container(color: Colors.white12, child: const Icon(Icons.image, color: Colors.white54));
+  }
+  if (path.startsWith('http')) {
+    return Image.network(path, height: height, width: width, fit: fit, errorBuilder: (c, e, s) => Container(color: Colors.white12, child: const Icon(Icons.broken_image, color: Colors.white54)));
+  }
+  return Image.file(File(path), height: height, width: width, fit: fit, errorBuilder: (c, e, s) => Container(color: Colors.white12, child: const Icon(Icons.broken_image, color: Colors.white54)));
+}
 
 class Product {
   String name; String desc; double price; double oldPrice; String category; bool isOffer; bool isFav; String? imagePath; String iconName;
@@ -507,9 +530,7 @@ class _OdayHomeState extends State<OdayHome> {
             child: p.imagePath != null
                 ? ClipRRect(
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
-                    child: p.imagePath!.startsWith('http')
-                        ? Image.network(p.imagePath!, fit: BoxFit.cover)
-                        : Image.file(File(p.imagePath!), fit: BoxFit.cover),
+                    child: buildImageWidget(p.imagePath, height: 140, width: double.infinity),
                   )
                 : Icon(getProductIcon(p.iconName), size: 50, color: accentBlue),
           ),
@@ -562,6 +583,7 @@ class _OdayHomeState extends State<OdayHome> {
     final addrC = TextEditingController();
     String method = 'كاش عند الاستلام';
     String? proofPath;
+    bool isUploading = false;
     return StatefulBuilder(
       builder: (ctx, setLocal) {
         return Container(
@@ -587,7 +609,7 @@ class _OdayHomeState extends State<OdayHome> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(color: accentOrange.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
-                  child: Column(children: [Row(children: [Expanded(child: Text('حول على: ${method == 'فودافون كاش' ? vodafoneNumber : instapayNumber}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white))), IconButton(icon: const Icon(Icons.copy, color: Colors.white), onPressed: () { Clipboard.setData(ClipboardData(text: method == 'فودافون كاش' ? vodafoneNumber : instapayNumber)); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم نسخ الرقم'))); })]), const SizedBox(height: 10), ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: accentOrange), onPressed: () async { final picker = ImagePicker(); final x = await picker.pickImage(source: ImageSource.gallery); if (x != null) { setLocal(() => proofPath = x.path); } }, icon: const Icon(Icons.upload, color: Colors.white), label: Text(proofPath == null ? 'ارفع صورة التحويل' : 'تم رفع الصورة', style: const TextStyle(color: Colors.white))), if (proofPath != null) Padding(padding: const EdgeInsets.only(top: 10), child: Image.file(File(proofPath!), height: 120))]),
+                  child: Column(children: [Row(children: [Expanded(child: Text('حول على: ${method == 'فودافون كاش' ? vodafoneNumber : instapayNumber}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white))), IconButton(icon: const Icon(Icons.copy, color: Colors.white), onPressed: () { Clipboard.setData(ClipboardData(text: method == 'فودافون كاش' ? vodafoneNumber : instapayNumber)); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم نسخ الرقم'))); })]), const SizedBox(height: 10), ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: accentOrange), onPressed: () async { final picker = ImagePicker(); final x = await picker.pickImage(source: ImageSource.gallery); if (x != null) { setLocal(() => proofPath = x.path); } }, icon: const Icon(Icons.upload, color: Colors.white), label: Text(proofPath == null ? 'ارفع صورة التحويل' : 'تم رفع الصورة', style: const TextStyle(color: Colors.white))), if (proofPath != null) Padding(padding: const EdgeInsets.only(top: 10), child: buildImageWidget(proofPath, height: 120))]),
                 ),
               ],
               const SizedBox(height: 16),
@@ -600,7 +622,14 @@ class _OdayHomeState extends State<OdayHome> {
                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('كمل بياناتك الاول')));
                       return;
                     }
-                    final newOrder = AppOrder(id: DateTime.now().millisecondsSinceEpoch.toString(), customerName: nameC.text, phone: phoneC.text, address: addrC.text, paymentMethod: method, status: 'جديد', items: List.from(cart), total: cartTotal, proofPath: proofPath, date: DateTime.now().toString().substring(0, 10));
+                    setLocal(() => isUploading = true);
+                    String? finalProof = proofPath;
+                    if (proofPath != null && !proofPath!.startsWith('http')) {
+                      final url = await uploadImageToStorage(File(proofPath!), 'proofs');
+                      if (url != null) finalProof = url;
+                    }
+                    setLocal(() => isUploading = false);
+                    final newOrder = AppOrder(id: DateTime.now().millisecondsSinceEpoch.toString(), customerName: nameC.text, phone: phoneC.text, address: addrC.text, paymentMethod: method, status: 'جديد', items: List.from(cart), total: cartTotal, proofPath: finalProof, date: DateTime.now().toString().substring(0, 10));
                     setState(() {
                       orders.add(newOrder);
                       cart.clear();
@@ -610,7 +639,7 @@ class _OdayHomeState extends State<OdayHome> {
                     await _saveOrderToFirebase(newOrder);
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم استلام طلبك وهنكلمك')));
                   },
-                  child: const Text('تأكيد الطلب', style: TextStyle(color: Colors.white, fontSize: 17)),
+                  child: isUploading ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white)) : const Text('تأكيد الطلب', style: TextStyle(color: Colors.white, fontSize: 17)),
                 ),
               ),
             ],
@@ -840,7 +869,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           color: navyCard,
           child: ListTile(
             leading: p.imagePath != null
-                ? ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.file(File(p.imagePath!), width: 50, height: 50, fit: BoxFit.cover))
+                ? ClipRRect(borderRadius: BorderRadius.circular(10), child: buildImageWidget(p.imagePath, width: 50, height: 50))
                 : Container(width: 50, height: 50, decoration: BoxDecoration(color: Colors.white12, borderRadius: BorderRadius.circular(10)), child: Icon(getProductIcon(p.iconName), color: accentBlue)),
             title: Text(p.name, style: const TextStyle(color: Colors.white)),
             subtitle: Text('${p.price} ج - ${p.category} - ${p.isOffer ? 'عرض' : 'عادي'}', style: const TextStyle(color: Colors.white70)),
@@ -884,7 +913,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 Text('${o.address} - ${o.date}', style: const TextStyle(color: Colors.white70)),
                 Text('${o.items.map((e) => '${e.name} x${e.qty}').join(', ')}', style: const TextStyle(color: Colors.white70)),
                 Text('الاجمالي: ${o.total} ج - ${o.paymentMethod}', style: const TextStyle(color: accentOrange)),
-                if (o.proofPath != null) Padding(padding: const EdgeInsets.only(top: 10), child: Image.file(File(o.proofPath!), height: 120)),
+                if (o.proofPath != null) Padding(padding: const EdgeInsets.only(top: 10), child: buildImageWidget(o.proofPath, height: 120)),
                 const SizedBox(height: 10),
                 Row(
                   children: [
@@ -983,6 +1012,7 @@ class _AdminProductFormState extends State<AdminProductForm> {
   String category = 'جرابات';
   bool isOffer = false;
   String? imagePath;
+  bool isSaving = false;
   final cats = ['جرابات', 'شواحن', 'سماعات', 'سكرينات', 'اكسسوارات'];
 
   @override
@@ -1017,7 +1047,7 @@ class _AdminProductFormState extends State<AdminProductForm> {
                 height: 180,
                 decoration: BoxDecoration(color: navyCard, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white24)),
                 child: imagePath != null
-                    ? ClipRRect(borderRadius: BorderRadius.circular(16), child: Image.file(File(imagePath!), fit: BoxFit.cover))
+                    ? ClipRRect(borderRadius: BorderRadius.circular(16), child: buildImageWidget(imagePath, height: 180, width: double.infinity))
                     : const Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.add_a_photo, size: 50, color: Colors.white70), SizedBox(height: 10), Text('دوس هنا واختار صورة المنتج', style: TextStyle(color: Colors.white))]),
               ),
             ),
@@ -1044,11 +1074,18 @@ class _AdminProductFormState extends State<AdminProductForm> {
               width: double.infinity,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: accentOrange, padding: const EdgeInsets.symmetric(vertical: 14)),
-                onPressed: () {
+                onPressed: () async {
                   if (nameC.text.isEmpty || priceC.text.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('اكتب الاسم والسعر الاول')));
                     return;
                   }
+                  setState(() => isSaving = true);
+                  String? finalImage = imagePath;
+                  if (imagePath != null && !imagePath!.startsWith('http')) {
+                    final url = await uploadImageToStorage(File(imagePath!), 'products');
+                    if (url != null) finalImage = url;
+                  }
+                  setState(() => isSaving = false);
                   final p = Product(
                     name: nameC.text,
                     desc: descC.text,
@@ -1057,12 +1094,12 @@ class _AdminProductFormState extends State<AdminProductForm> {
                     category: category,
                     isOffer: isOffer,
                     isFav: widget.existing?.isFav ?? false,
-                    imagePath: imagePath,
+                    imagePath: finalImage,
                     iconName: widget.existing?.iconName ?? 'phone',
                   );
                   Navigator.of(context).pop(p);
                 },
-                child: const Text('حفظ المنتج', style: TextStyle(color: Colors.white, fontSize: 17)),
+                child: isSaving ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white)) : const Text('حفظ المنتج', style: TextStyle(color: Colors.white, fontSize: 17)),
               ),
             ),
           ],
