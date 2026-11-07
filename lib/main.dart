@@ -71,6 +71,7 @@ class _OdayAppState extends State<OdayApp> {
   bool showStart = true;
   int currentIndex = 0;
   int adminTapCount = 0;
+  int lastAdminTapTime = 0;
   String searchText = '';
   String storeCategory = 'الكل';
   List<OrderItem> cart = [];
@@ -150,23 +151,30 @@ class _OdayAppState extends State<OdayApp> {
 
   void _addToCart(Product p) {
     final idx = cart.indexWhere((e) => e.name == p.name);
-    if (idx >= 0) {
-      cart[idx].qty = cart[idx].qty + 1;
-    } else {
-      cart.add(OrderItem(name: p.name, qty: 1, price: p.price));
-    }
+    setState(() {
+      if (idx >= 0) {
+        cart[idx].qty = cart[idx].qty + 1;
+      } else {
+        cart.add(OrderItem(name: p.name, qty: 1, price: p.price));
+      }
+    });
     _saveAll();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('تم اضافته الى السلة - ${p.name}'), backgroundColor: accentGreen, duration: const Duration(seconds: 1)),
+    );
   }
 
   void _onTitleTap() {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    if (now - lastAdminTapTime > 3000) {
+      adminTapCount = 0;
+    }
+    lastAdminTapTime = now;
     adminTapCount = adminTapCount + 1;
     if (adminTapCount >= 3) {
       adminTapCount = 0;
       _askAdminPassword();
     }
-    Future.delayed(const Duration(seconds: 2), () {
-      adminTapCount = 0;
-    });
   }
 
   void _askAdminPassword() {
@@ -254,7 +262,14 @@ class _OdayAppState extends State<OdayApp> {
         backgroundColor: navyBg,
         appBar: AppBar(
           backgroundColor: navyDark,
-          title: GestureDetector(onTap: _onTitleTap, child: const Text('عدي فون', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+          title: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _onTitleTap,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+              child: const Text('عدي فون', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ),
           actions: [
             Stack(
               children: [
@@ -301,33 +316,39 @@ class _OdayAppState extends State<OdayApp> {
           const SizedBox(height: 12),
           TextField(onChanged: (v) => setState(() => searchText = v), style: const TextStyle(color: Colors.white), decoration: InputDecoration(hintText: 'دور على جراب، شاحن، سماعة، سكرينة...', prefixIcon: const Icon(Icons.search, color: Colors.white70), filled: true, fillColor: navyCard, border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none))),
           const SizedBox(height: 16),
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => setState(() => currentIndex = 1),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(color: navyCard, borderRadius: BorderRadius.circular(16), border: Border.all(color: accentOrange)),
-              child: Row(children: [Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: accentOrange, borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.store, color: Colors.white, size: 30)), const SizedBox(width: 12), const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('المتجر', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)), Text('جرابات وشواحن وسماعات وسكرينات', style: TextStyle(color: Colors.white70))])), const Icon(Icons.arrow_forward_ios, size: 17, color: Colors.white70)]),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => setState(() => currentIndex = 1),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(color: navyCard, borderRadius: BorderRadius.circular(16), border: Border.all(color: accentOrange)),
+                child: Row(children: [Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: accentOrange, borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.store, color: Colors.white, size: 30)), const SizedBox(width: 12), const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('المتجر', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)), Text('جرابات وشواحن وسماعات وسكرينات', style: TextStyle(color: Colors.white70))])), const Icon(Icons.arrow_forward_ios, size: 17, color: Colors.white70)]),
+              ),
             ),
           ),
           const SizedBox(height: 16),
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => _openRepairForm('مندوب صيانة موبايل'),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFF1E3A5F), accentOrange]), borderRadius: BorderRadius.circular(16)),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(children: [Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(10)), child: const Icon(Icons.delivery_dining, color: Colors.white, size: 30)), const SizedBox(width: 10), const Expanded(child: Text('اطلب مندوب لصيانة تليفونك', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)))]),
-                  const SizedBox(height: 10),
-                  const Text('هنبعتلك مندوب ياخد التليفون من عندك، نصلحه، ونرجعهولك تاني لحد البيت', style: TextStyle(color: Colors.white, fontSize: 15)),
-                  const SizedBox(height: 12),
-                  Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)), child: const Text('اطلب المندوب دلوقتي - دوس هنا', style: TextStyle(fontWeight: FontWeight.bold, color: accentOrange))),
-                ],
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => _openRepairForm('مندوب صيانة موبايل'),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFF1E3A5F), accentOrange]), borderRadius: BorderRadius.circular(16)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(10)), child: const Icon(Icons.delivery_dining, color: Colors.white, size: 30)), const SizedBox(width: 10), const Expanded(child: Text('اطلب مندوب لصيانة تليفونك', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)))]),
+                    const SizedBox(height: 10),
+                    const Text('هنبعتلك مندوب ياخد التليفون من عندك، نصلحه، ونرجعهولك تاني لحد البيت', style: TextStyle(color: Colors.white, fontSize: 15)),
+                    const SizedBox(height: 12),
+                    Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)), child: const Text('اطلب المندوب دلوقتي - دوس هنا', style: TextStyle(fontWeight: FontWeight.bold, color: accentOrange))),
+                  ],
+                ),
               ),
             ),
           ),
@@ -349,13 +370,16 @@ class _OdayAppState extends State<OdayApp> {
   }
 
   Widget _otherServiceCard(String title, IconData icon, String kind) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => _openRepairForm(kind),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: navyCard, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white24)),
-        child: Column(children: [Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: accentBlue.withOpacity(0.2), shape: BoxShape.circle), child: Icon(icon, size: 32, color: accentBlue)), const SizedBox(height: 10), Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)), const Text('اطلب دلوقتي - دوس هنا', style: TextStyle(color: accentOrange, fontSize: 13))]),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => _openRepairForm(kind),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(color: navyCard, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white24)),
+          child: Column(children: [Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: accentBlue.withOpacity(0.2), shape: BoxShape.circle), child: Icon(icon, size: 32, color: accentBlue)), const SizedBox(height: 10), Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)), const Text('اطلب دلوقتي - دوس هنا', style: TextStyle(color: accentOrange, fontSize: 13))]),
+        ),
       ),
     );
   }
@@ -415,7 +439,7 @@ class _OdayAppState extends State<OdayApp> {
           ),
           Padding(
             padding: const EdgeInsets.all(10),
-            child: Row(children: [Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: accentOrange), onPressed: () { setState(() => _addToCart(p)); }, child: const Text('اضافة', style: TextStyle(color: Colors.white)))), IconButton(onPressed: () { setState(() { p.isFav = !p.isFav; _saveAll(); }); }, icon: Icon(p.isFav ? Icons.favorite : Icons.favorite_border, color: Colors.red))]),
+            child: Row(children: [Expanded(child: SizedBox(height: 44, child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: accentOrange, padding: const EdgeInsets.symmetric(vertical: 10), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))), onPressed: () => _addToCart(p), child: const Text('اضافة +', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold))))), IconButton(onPressed: () { setState(() { p.isFav = !p.isFav; _saveAll(); }); }, icon: Icon(p.isFav ? Icons.favorite : Icons.favorite_border, color: Colors.red))]),
           ),
         ],
       ),
