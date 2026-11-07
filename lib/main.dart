@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -157,12 +158,17 @@ class _OdayHomeState extends State<OdayHome> {
   String searchText = '';
   String storeCategory = 'الكل';
   int logoTaps = 0;
-  // === الإضافة الجديدة - البانر فقط ===
+  // === الإضافة الجديدة - البانر 5 صور + الشريط ===
   int heroIndex = 0;
-  List<Map<String, String>> heroOffers = [
-    {'title': 'خصم 30% النهارده بس 🔥', 'sub': 'على كل الجرابات والشواحن - التوصيل مجاني في الإسماعيلية'},
-    {'title': 'صيانة من البيت 📱', 'sub': 'مندوب ياخد تليفونك ويرجعهولك متصلح لحد البيت'},
-    {'title': 'كاش باك 10% 💰', 'sub': 'على أول طلب ليك من المتجر'},
+  PageController _heroController = PageController();
+  Timer? _heroTimer;
+  String tickerText = 'التوصيل مجاني النهارده في الإسماعيلية • صيانة من البيت • كاش باك 10%';
+  List<String> heroImages = [
+    'https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=800',
+    'https://images.unsplash.com/photo-1585060544812-6b45742d762f?w=800',
+    'https://images.unsplash.com/photo-1600490722773-35753aea6332?w=800',
+    'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=800',
+    'https://images.unsplash.com/photo-1601524909162-ae8725290836?w=800',
   ];
   // === نهاية الإضافة ===
   List<OrderItem> cart = [];
@@ -183,7 +189,33 @@ class _OdayHomeState extends State<OdayHome> {
     super.initState();
     _loadAll();
     _loadProductsFromFirebase();
+    // === الإضافة الجديدة - تشغيل التقليب التلقائي كل ثانيتين ===
+    _heroTimer = Timer.periodic(
+      const Duration(seconds: 2),
+      (t) {
+        if (!mounted || heroImages.isEmpty) return;
+        heroIndex = (heroIndex + 1) % heroImages.length;
+        if (_heroController.hasClients) {
+          _heroController.animateToPage(
+            heroIndex,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOut,
+          );
+        }
+        setState(() {});
+      },
+    );
+    // === نهاية الإضافة ===
   }
+
+  // === الإضافة الجديدة - قفل التايمر ===
+  @override
+  void dispose() {
+    _heroTimer?.cancel();
+    _heroController.dispose();
+    super.dispose();
+  }
+  // === نهاية الإضافة ===
 
   Future<void> _loadProductsFromFirebase() async {
     try {
@@ -218,6 +250,16 @@ class _OdayHomeState extends State<OdayHome> {
       if (cStr != null) {
         cart = (jsonDecode(cStr) as List).map((e) => OrderItem.fromJson(Map<String, dynamic>.from(e))).toList();
       }
+      // === الإضافة الجديدة - تحميل صور البانر وكلام الشريط ===
+      final hStr = prefs.getString('heroImages');
+      if (hStr != null && hStr.isNotEmpty) {
+        heroImages = List<String>.from(jsonDecode(hStr));
+      }
+      final tStr = prefs.getString('tickerText');
+      if (tStr != null && tStr.isNotEmpty) {
+        tickerText = tStr;
+      }
+      // === نهاية الإضافة ===
     });
   }
 
@@ -227,6 +269,10 @@ class _OdayHomeState extends State<OdayHome> {
     await prefs.setString('orders', jsonEncode(orders.map((e) => e.toJson()).toList()));
     await prefs.setString('repairs', jsonEncode(repairs.map((e) => e.toJson()).toList()));
     await prefs.setString('cart', jsonEncode(cart.map((e) => e.toJson()).toList()));
+    // === الإضافة الجديدة - حفظ صور البانر وكلام الشريط ===
+    await prefs.setString('heroImages', jsonEncode(heroImages));
+    await prefs.setString('tickerText', tickerText);
+    // === نهاية الإضافة ===
   }
 
   Future<void> _saveOrderToFirebase(AppOrder o) async {
@@ -312,6 +358,23 @@ class _OdayHomeState extends State<OdayHome> {
                     products: products,
                     orders: orders,
                     repairs: repairs,
+                    // === الإضافة الجديدة - تمرير البانر والشريط للأدمن ===
+                    heroImages: heroImages,
+                    tickerText: tickerText,
+                    onUpdateHeroImages: (list) {
+                      setState(() {
+                        heroImages = list;
+                        heroIndex = 0;
+                        _saveAll();
+                      });
+                    },
+                    onUpdateTicker: (txt) {
+                      setState(() {
+                        tickerText = txt;
+                        _saveAll();
+                      });
+                    },
+                    // === نهاية الإضافة ===
                     onAddProduct: (p) {
                       setState(() {
                         products.add(p);
@@ -447,46 +510,77 @@ class _OdayHomeState extends State<OdayHome> {
     return _buildHome();
   }
 
-  // === الإضافة الجديدة - البانر والشريط ===
+  // === الإضافة الجديدة - البانر بقى 5 صور بيقلبوا لوحدهم ===
   Widget _buildHeroBanner() {
+    if (heroImages.isEmpty) {
+      return const SizedBox();
+    }
     return Column(
       children: [
         Container(
-          height: 170,
+          height: 180,
           width: double.infinity,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            gradient: const LinearGradient(colors: [Color(0xFF1E3A5F), accentOrange]),
           ),
-          child: PageView.builder(
-            itemCount: heroOffers.length,
-            onPageChanged: (i) => setState(() => heroIndex = i),
-            itemBuilder: (ctx, i) {
-              return Padding(
-                padding: const EdgeInsets.all(18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: PageView.builder(
+              controller: _heroController,
+              itemCount: heroImages.length,
+              onPageChanged: (i) => setState(() => heroIndex = i),
+              itemBuilder: (ctx, i) {
+                return Stack(
                   children: [
-                    Text(heroOffers[i]['title']!, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    Text(heroOffers[i]['sub']!, style: const TextStyle(color: Colors.white, fontSize: 14)),
-                    const SizedBox(height: 12),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-                      onPressed: () => setState(() => currentIndex = 1),
-                      child: const Text('اطلب دلوقتي', style: TextStyle(color: accentOrange, fontWeight: FontWeight.bold)),
+                    Image.network(
+                      heroImages[i],
+                      width: double.infinity,
+                      height: 180,
+                      fit: BoxFit.cover,
+                      errorBuilder: (c, e, s) => Container(
+                        color: navyCard,
+                        child: const Icon(Icons.image, color: Colors.white54),
+                      ),
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          colors: [Colors.black.withOpacity(0.6), Colors.transparent],
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 12,
+                      left: 12,
+                      right: 12,
+                      child: Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'عروض عدي فون 🔥',
+                              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: accentOrange),
+                            onPressed: () => setState(() => currentIndex = 1),
+                            child: const Text('اطلب دلوقتي', style: TextStyle(color: Colors.white)),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
         const SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(heroOffers.length, (i) => Container(
+          children: List.generate(heroImages.length, (i) => Container(
             margin: const EdgeInsets.symmetric(horizontal: 3),
             width: heroIndex == i ? 20 : 8,
             height: 8,
@@ -502,11 +596,18 @@ class _OdayHomeState extends State<OdayHome> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
       decoration: BoxDecoration(color: accentOrange.withOpacity(0.15), borderRadius: BorderRadius.circular(12), border: Border.all(color: accentOrange.withOpacity(0.4))),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.local_fire_department, color: accentOrange, size: 20),
-          SizedBox(width: 8),
-          Expanded(child: Text('التوصيل مجاني النهارده في الإسماعيلية • صيانة من البيت • كاش باك 10%', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold))),
+          const Icon(Icons.local_fire_department, color: accentOrange, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              tickerText,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+            ),
+          ),
         ],
       ),
     );
@@ -880,6 +981,12 @@ class AdminDashboard extends StatefulWidget {
   final List<Product> products;
   final List<AppOrder> orders;
   final List<RepairRequest> repairs;
+  // === الإضافة الجديدة ===
+  final List<String> heroImages;
+  final String tickerText;
+  final Function(List<String>) onUpdateHeroImages;
+  final Function(String) onUpdateTicker;
+  // === نهاية الإضافة ===
   final Function(Product) onAddProduct;
   final Function(int, Product) onUpdateProduct;
   final Function(int) onDeleteProduct;
@@ -887,13 +994,22 @@ class AdminDashboard extends StatefulWidget {
   final Function(int) onDeleteOrder;
   final Function(int, String) onUpdateRepairStatus;
   final Function(int) onDeleteRepair;
-  const AdminDashboard({super.key, required this.products, required this.orders, required this.repairs, required this.onAddProduct, required this.onUpdateProduct, required this.onDeleteProduct, required this.onUpdateOrderStatus, required this.onDeleteOrder, required this.onUpdateRepairStatus, required this.onDeleteRepair});
+  const AdminDashboard({super.key, required this.products, required this.orders, required this.repairs, required this.heroImages, required this.tickerText, required this.onUpdateHeroImages, required this.onUpdateTicker, required this.onAddProduct, required this.onUpdateProduct, required this.onDeleteProduct, required this.onUpdateOrderStatus, required this.onDeleteOrder, required this.onUpdateRepairStatus, required this.onDeleteRepair});
   @override
   State<AdminDashboard> createState() => _AdminDashboardState();
 }
 
 class _AdminDashboardState extends State<AdminDashboard> {
   int tab = 0;
+  // === الإضافة الجديدة ===
+  late TextEditingController tickerC;
+  bool isUploadingHero = false;
+  @override
+  void initState() {
+    super.initState();
+    tickerC = TextEditingController(text: widget.tickerText);
+  }
+  // === نهاية الإضافة ===
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -918,10 +1034,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
               Expanded(child: _adminTabButton('المنتجات', 0)),
               Expanded(child: _adminTabButton('الطلبات', 1)),
               Expanded(child: _adminTabButton('الخدمات', 2)),
+              // === الإضافة الجديدة - زرار التاب الرابع ===
+              Expanded(child: _adminTabButton('البانر والشريط', 3)),
+              // === نهاية الإضافة ===
             ],
           ),
           const SizedBox(height: 10),
-          Expanded(child: tab == 0 ? _productsTab() : tab == 1 ? _ordersTab() : _repairsTab()),
+          Expanded(child: tab == 0 ? _productsTab() : tab == 1 ? _ordersTab() : tab == 2 ? _repairsTab() : _bannerTab()),
         ],
       ),
       floatingActionButton: tab == 0
@@ -960,6 +1079,111 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ),
     );
   }
+
+  // === الإضافة الجديدة - تاب البانر والشريط كله ===
+  Widget _bannerTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'كلام الشريط الرفيع',
+            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: tickerC,
+            style: const TextStyle(color: Colors.white),
+            decoration: const InputDecoration(
+              hintText: 'اكتب العرض بتاع النهارده...',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: accentOrange, padding: const EdgeInsets.symmetric(vertical: 14)),
+              onPressed: () {
+                widget.onUpdateTicker(tickerC.text);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('تم حفظ كلام الشريط')),
+                );
+              },
+              child: const Text('حفظ كلام الشريط', style: TextStyle(color: Colors.white)),
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'صور البانر المتحرك - 5 صور',
+            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+          ...widget.heroImages.asMap().entries.map((e) {
+            final idx = e.key;
+            final img = e.value;
+            return Card(
+              color: navyCard,
+              child: ListTile(
+                leading: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: buildImageWidget(img, width: 60, height: 60),
+                ),
+                title: Text('صورة رقم ${idx + 1}', style: const TextStyle(color: Colors.white)),
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () {
+                    final list = List<String>.from(widget.heroImages);
+                    list.removeAt(idx);
+                    widget.onUpdateHeroImages(list);
+                    setState(() {});
+                  },
+                ),
+              ),
+            );
+          }),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(backgroundColor: accentGreen, padding: const EdgeInsets.symmetric(vertical: 14)),
+              onPressed: () async {
+                final picker = ImagePicker();
+                final x = await picker.pickImage(source: ImageSource.gallery);
+                if (x == null) return;
+                setState(() => isUploadingHero = true);
+                final url = await uploadImageToStorage(File(x.path), 'hero');
+                setState(() => isUploadingHero = false);
+                if (url != null) {
+                  final list = List<String>.from(widget.heroImages);
+                  if (list.length >= 5) {
+                    list.removeAt(0);
+                  }
+                  list.add(url);
+                  widget.onUpdateHeroImages(list);
+                  setState(() {});
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('تم اضافة الصورة للبانر')),
+                  );
+                }
+              },
+              icon: const Icon(Icons.add_a_photo, color: Colors.white),
+              label: isUploadingHero
+                  ? const Text('جاري الرفع...', style: TextStyle(color: Colors.white))
+                  : const Text('اضف صورة جديدة للبانر', style: TextStyle(color: Colors.white)),
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'لو عندك 5 صور وضفت واحدة جديدة، أول صورة قديمة هتتمسح لوحدها.',
+            style: TextStyle(color: Colors.white54, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+  // === نهاية الإضافة ===
 
   Widget _productsTab() {
     if (widget.products.isEmpty) return const Center(child: Text('مفيش منتجات', style: TextStyle(color: Colors.white)));
