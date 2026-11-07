@@ -19,6 +19,12 @@ void main() async {
 
 const String vodafoneNumber = '01015519180';
 const String instapayNumber = '01069068091';
+const Color navyBg = Color(0xFF0A1931);
+const Color navyCard = Color(0xFF13294B);
+const Color navyDark = Color(0xFF071224);
+const Color accentOrange = Color(0xFFFF7A00);
+const Color accentBlue = Color(0xFF38BDF6);
+const Color accentGreen = Color(0xFF22C55E);
 
 class Product {
   String name; String desc; double price; double oldPrice; String category; bool isOffer; bool isFav; String? imagePath; String iconName;
@@ -145,7 +151,7 @@ class _OdayAppState extends State<OdayApp> {
   void _addToCart(Product p) {
     final idx = cart.indexWhere((e) => e.name == p.name);
     if (idx >= 0) {
-      cart[idx].qty++;
+      cart[idx].qty = cart[idx].qty + 1;
     } else {
       cart.add(OrderItem(name: p.name, qty: 1, price: p.price));
     }
@@ -153,14 +159,49 @@ class _OdayAppState extends State<OdayApp> {
   }
 
   void _onTitleTap() {
-    adminTapCount++;
-    if (adminTapCount >= 5) {
+    adminTapCount = adminTapCount + 1;
+    if (adminTapCount >= 3) {
       adminTapCount = 0;
-      _openAdmin();
+      _askAdminPassword();
     }
     Future.delayed(const Duration(seconds: 2), () {
       adminTapCount = 0;
     });
+  }
+
+  void _askAdminPassword() {
+    final passC = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: navyCard,
+          title: const Text('دخول الادمن', style: TextStyle(color: Colors.white)),
+          content: TextField(
+            controller: passC,
+            obscureText: true,
+            keyboardType: TextInputType.visiblePassword,
+            style: const TextStyle(color: Colors.white),
+            decoration: const InputDecoration(labelText: 'اكتب الباسورد', border: OutlineInputBorder()),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('الغاء', style: TextStyle(color: Colors.white))),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: accentOrange),
+              onPressed: () {
+                if (passC.text.trim() == '123+') {
+                  Navigator.pop(ctx);
+                  _openAdmin();
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('الباسورد غلط')));
+                }
+              },
+              child: const Text('دخول', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -169,14 +210,14 @@ class _OdayAppState extends State<OdayApp> {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         home: Scaffold(
-          backgroundColor: const Color(0xFF0F172A),
+          backgroundColor: navyBg,
           body: Center(
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: Colors.orange, borderRadius: BorderRadius.circular(30)), child: const Icon(Icons.phone_android, size: 70, color: Colors.white)),
+                  Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: accentOrange, borderRadius: BorderRadius.circular(30)), child: const Icon(Icons.phone_android, size: 70, color: Colors.white)),
                   const SizedBox(height: 20),
                   const Text('عدي فون', style: TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
@@ -187,7 +228,7 @@ class _OdayAppState extends State<OdayApp> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                      style: ElevatedButton.styleFrom(backgroundColor: accentOrange, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
                       onPressed: () => setState(() => showStart = false),
                       child: const Text('ابدأ', style: TextStyle(fontSize: 20, color: Colors.white)),
                     ),
@@ -201,25 +242,34 @@ class _OdayAppState extends State<OdayApp> {
     }
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.orange, scaffoldBackgroundColor: const Color(0xFFF6F7FB)),
+      theme: ThemeData(
+        primarySwatch: Colors.orange,
+        scaffoldBackgroundColor: navyBg,
+        appBarTheme: const AppBarTheme(backgroundColor: navyDark, foregroundColor: Colors.white),
+        bottomNavigationBarTheme: const BottomNavigationBarThemeData(backgroundColor: navyDark, selectedItemColor: accentOrange, unselectedItemColor: Colors.grey),
+        textTheme: const TextTheme(bodyMedium: TextStyle(color: Colors.white), bodyLarge: TextStyle(color: Colors.white), titleMedium: TextStyle(color: Colors.white)),
+        inputDecorationTheme: InputDecorationTheme(filled: true, fillColor: navyCard, labelStyle: const TextStyle(color: Colors.white70), hintStyle: const TextStyle(color: Colors.white54), border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)), enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Colors.white24))),
+      ),
       home: Scaffold(
+        backgroundColor: navyBg,
         appBar: AppBar(
-          backgroundColor: const Color(0xFF0F172A),
+          backgroundColor: navyDark,
           title: GestureDetector(onTap: _onTitleTap, child: const Text('عدي فون', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
           actions: [
             Stack(
               children: [
                 IconButton(icon: const Icon(Icons.shopping_cart, color: Colors.white), onPressed: () => setState(() => currentIndex = 2)),
                 if (cart.isNotEmpty)
-                  Positioned(right: 6, top: 6, child: Container(padding: const EdgeInsets.all(4), decoration: const BoxDecoration(color: Colors.orange, shape: BoxShape.circle), child: Text('${cart.length}', style: const TextStyle(color: Colors.white, fontSize: 12)))),
+                  Positioned(right: 6, top: 6, child: Container(padding: const EdgeInsets.all(4), decoration: const BoxDecoration(color: accentOrange, shape: BoxShape.circle), child: Text('${cart.length}', style: const TextStyle(color: Colors.white, fontSize: 12)))),
               ],
             ),
           ],
         ),
         body: _buildBody(),
         bottomNavigationBar: BottomNavigationBar(
+          backgroundColor: navyDark,
           currentIndex: currentIndex,
-          selectedItemColor: Colors.orange,
+          selectedItemColor: accentOrange,
           unselectedItemColor: Colors.grey,
           type: BottomNavigationBarType.fixed,
           onTap: (i) => setState(() => currentIndex = i),
@@ -247,26 +297,28 @@ class _OdayAppState extends State<OdayApp> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('مرحبا بكم في عدي فون', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          const Text('مرحبا بكم في عدي فون', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
           const SizedBox(height: 12),
-          TextField(onChanged: (v) => setState(() => searchText = v), decoration: InputDecoration(hintText: 'دور على جراب، شاحن، سماعة، سكرينة...', prefixIcon: const Icon(Icons.search), filled: true, fillColor: Colors.white, border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none))),
+          TextField(onChanged: (v) => setState(() => searchText = v), style: const TextStyle(color: Colors.white), decoration: InputDecoration(hintText: 'دور على جراب، شاحن، سماعة، سكرينة...', prefixIcon: const Icon(Icons.search, color: Colors.white70), filled: true, fillColor: navyCard, border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none))),
           const SizedBox(height: 16),
-          InkWell(
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onTap: () => setState(() => currentIndex = 1),
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.orange.withOpacity(0.3))),
-              child: Row(children: [Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.orange, borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.store, color: Colors.white, size: 30)), const SizedBox(width: 12), const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('المتجر', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)), Text('جرابات وشواحن وسماعات وسكرينات', style: TextStyle(color: Colors.grey))])), const Icon(Icons.arrow_forward_ios, size: 17, color: Colors.grey)]),
+              decoration: BoxDecoration(color: navyCard, borderRadius: BorderRadius.circular(16), border: Border.all(color: accentOrange)),
+              child: Row(children: [Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: accentOrange, borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.store, color: Colors.white, size: 30)), const SizedBox(width: 12), const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('المتجر', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)), Text('جرابات وشواحن وسماعات وسكرينات', style: TextStyle(color: Colors.white70))])), const Icon(Icons.arrow_forward_ios, size: 17, color: Colors.white70)]),
             ),
           ),
           const SizedBox(height: 16),
-          InkWell(
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onTap: () => _openRepairForm('مندوب صيانة موبايل'),
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFF0F172A), Color(0xFFF97316)]), borderRadius: BorderRadius.circular(16)),
+              decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFF1E3A5F), accentOrange]), borderRadius: BorderRadius.circular(16)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -274,22 +326,22 @@ class _OdayAppState extends State<OdayApp> {
                   const SizedBox(height: 10),
                   const Text('هنبعتلك مندوب ياخد التليفون من عندك، نصلحه، ونرجعهولك تاني لحد البيت', style: TextStyle(color: Colors.white, fontSize: 15)),
                   const SizedBox(height: 12),
-                  Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)), child: const Text('اطلب المندوب دلوقتي - دوس هنا', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange))),
+                  Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)), child: const Text('اطلب المندوب دلوقتي - دوس هنا', style: TextStyle(fontWeight: FontWeight.bold, color: accentOrange))),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 20),
-          const Text('عروض المتجر', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          const Text('عروض المتجر', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
           const SizedBox(height: 10),
-          if (offers.isEmpty) const Text('مفيش عروض دلوقتي'),
+          if (offers.isEmpty) const Text('مفيش عروض دلوقتي', style: TextStyle(color: Colors.white70)),
           ...offers.map((p) => _productCard(p)).toList(),
           const SizedBox(height: 20),
-          const Text('خدمات أخرى', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          const Text('خدمات أخرى', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
           const SizedBox(height: 10),
           Row(children: [Expanded(child: _otherServiceCard('نجارة', Icons.handyman, 'نجارة')), const SizedBox(width: 12), Expanded(child: _otherServiceCard('كهربائي', Icons.electrical_services, 'كهربائي'))]),
           const SizedBox(height: 10),
-          const Text('مفيش اي خدمات تانية غير دول', style: TextStyle(color: Colors.grey, fontSize: 12)),
+          const Text('مفيش اي خدمات تانية غير دول', style: TextStyle(color: Colors.white54, fontSize: 12)),
           const SizedBox(height: 20),
         ],
       ),
@@ -297,12 +349,13 @@ class _OdayAppState extends State<OdayApp> {
   }
 
   Widget _otherServiceCard(String title, IconData icon, String kind) {
-    return InkWell(
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () => _openRepairForm(kind),
       child: Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-        child: Column(children: [Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), shape: BoxShape.circle), child: Icon(icon, size: 32, color: Colors.blue)), const SizedBox(height: 10), Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)), const Text('اطلب دلوقتي', style: TextStyle(color: Colors.orange, fontSize: 13))]),
+        decoration: BoxDecoration(color: navyCard, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white24)),
+        child: Column(children: [Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: accentBlue.withOpacity(0.2), shape: BoxShape.circle), child: Icon(icon, size: 32, color: accentBlue)), const SizedBox(height: 10), Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)), const Text('اطلب دلوقتي - دوس هنا', style: TextStyle(color: accentOrange, fontSize: 13))]),
       ),
     );
   }
@@ -310,7 +363,7 @@ class _OdayAppState extends State<OdayApp> {
   Widget _buildStore() {
     return Column(
       children: [
-        Padding(padding: const EdgeInsets.all(16), child: TextField(onChanged: (v) => setState(() => searchText = v), decoration: InputDecoration(hintText: 'دور في المتجر...', prefixIcon: const Icon(Icons.search), filled: true, fillColor: Colors.white, border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none)))),
+        Padding(padding: const EdgeInsets.all(16), child: TextField(onChanged: (v) => setState(() => searchText = v), style: const TextStyle(color: Colors.white), decoration: InputDecoration(hintText: 'دور في المتجر...', prefixIcon: const Icon(Icons.search, color: Colors.white70), filled: true, fillColor: navyCard, border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none)))),
         SizedBox(
           height: 40,
           child: ListView(
@@ -318,7 +371,7 @@ class _OdayAppState extends State<OdayApp> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             children: storeCategories.map((c) {
               final sel = c == storeCategory;
-              return Padding(padding: const EdgeInsets.only(left: 10), child: ChoiceChip(label: Text(c), selected: sel, selectedColor: Colors.orange, labelStyle: TextStyle(color: sel ? Colors.white : Colors.black), onSelected: (_) => setState(() => storeCategory = c)));
+              return Padding(padding: const EdgeInsets.only(left: 10), child: ChoiceChip(label: Text(c), selected: sel, selectedColor: accentOrange, backgroundColor: navyCard, labelStyle: TextStyle(color: sel ? Colors.white : Colors.white70), onSelected: (_) => setState(() => storeCategory = c)));
             }).toList(),
           ),
         ),
@@ -330,6 +383,7 @@ class _OdayAppState extends State<OdayApp> {
 
   Widget _productCard(Product p) {
     return Card(
+      color: navyCard,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -337,7 +391,7 @@ class _OdayAppState extends State<OdayApp> {
           Container(
             height: 140,
             width: double.infinity,
-            decoration: BoxDecoration(color: Colors.grey[200], borderRadius: const BorderRadius.vertical(top: Radius.circular(14))),
+            decoration: BoxDecoration(color: Colors.white12, borderRadius: const BorderRadius.vertical(top: Radius.circular(14))),
             child: p.imagePath != null
                 ? ClipRRect(
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
@@ -345,23 +399,23 @@ class _OdayAppState extends State<OdayApp> {
                         ? Image.network(p.imagePath!, fit: BoxFit.cover)
                         : Image.file(File(p.imagePath!), fit: BoxFit.cover),
                   )
-                : Icon(getProductIcon(p.iconName), size: 50, color: Colors.blue),
+                : Icon(getProductIcon(p.iconName), size: 50, color: accentBlue),
           ),
           Padding(
             padding: const EdgeInsets.all(10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
-                Text(p.desc, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(p.desc, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70, fontSize: 12)),
                 const SizedBox(height: 4),
-                Row(children: [Text('${p.price} ج', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)), if (p.isOffer) Text(' ${p.oldPrice} ج', style: const TextStyle(decoration: TextDecoration.lineThrough, color: Colors.grey, fontSize: 12))]),
+                Row(children: [Text('${p.price} ج', style: const TextStyle(fontWeight: FontWeight.bold, color: accentOrange)), if (p.isOffer) Text(' ${p.oldPrice} ج', style: const TextStyle(decoration: TextDecoration.lineThrough, color: Colors.white54, fontSize: 12))]),
               ],
             ),
           ),
           Padding(
             padding: const EdgeInsets.all(10),
-            child: Row(children: [Expanded(child: ElevatedButton(onPressed: () { setState(() => _addToCart(p)); }, child: const Text('اضافة'))), IconButton(onPressed: () { setState(() { p.isFav = !p.isFav; _saveAll(); }); }, icon: Icon(p.isFav ? Icons.favorite : Icons.favorite_border, color: Colors.red))]),
+            child: Row(children: [Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: accentOrange), onPressed: () { setState(() => _addToCart(p)); }, child: const Text('اضافة', style: TextStyle(color: Colors.white)))), IconButton(onPressed: () { setState(() { p.isFav = !p.isFav; _saveAll(); }); }, icon: Icon(p.isFav ? Icons.favorite : Icons.favorite_border, color: Colors.red))]),
           ),
         ],
       ),
@@ -370,7 +424,7 @@ class _OdayAppState extends State<OdayApp> {
 
   Widget _buildCart() {
     if (cart.isEmpty) {
-      return const Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.shopping_cart_outlined, size: 70, color: Colors.grey), SizedBox(height: 10), Text('السلة فاضية')]));
+      return const Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.shopping_cart_outlined, size: 70, color: Colors.white54), SizedBox(height: 10), Text('السلة فاضية', style: TextStyle(color: Colors.white))]));
     }
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -379,10 +433,10 @@ class _OdayAppState extends State<OdayApp> {
           ...cart.asMap().entries.map((entry) {
             final idx = entry.key;
             final item = entry.value;
-            return Card(child: ListTile(title: Text(item.name), subtitle: Text('${item.price} ج'), trailing: Row(mainAxisSize: MainAxisSize.min, children: [IconButton(icon: const Icon(Icons.remove), onPressed: () { setState(() { if (item.qty > 1) { item.qty--; } else { cart.removeAt(idx); } _saveAll(); }); }), Text('${item.qty}'), IconButton(icon: const Icon(Icons.add), onPressed: () { setState(() { item.qty++; _saveAll(); }); }), IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () { setState(() { cart.removeAt(idx); _saveAll(); }); })])));
+            return Card(color: navyCard, child: ListTile(title: Text(item.name, style: const TextStyle(color: Colors.white)), subtitle: Text('${item.price} ج', style: const TextStyle(color: Colors.white70)), trailing: Row(mainAxisSize: MainAxisSize.min, children: [IconButton(icon: const Icon(Icons.remove, color: Colors.white), onPressed: () { setState(() { if (item.qty > 1) { item.qty = item.qty - 1; } else { cart.removeAt(idx); } _saveAll(); }); }), Text('${item.qty}', style: const TextStyle(color: Colors.white)), IconButton(icon: const Icon(Icons.add, color: Colors.white), onPressed: () { setState(() { item.qty = item.qty + 1; _saveAll(); }); }), IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () { setState(() { cart.removeAt(idx); _saveAll(); }); })])));
           }).toList(),
           const SizedBox(height: 10),
-          Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('الاجمالي', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)), Text('$cartTotal ج', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.orange))])),
+          Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: navyCard, borderRadius: BorderRadius.circular(14)), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('الاجمالي', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.white)), Text('$cartTotal ج', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: accentOrange))])),
           const SizedBox(height: 16),
           _checkoutForm(),
         ],
@@ -400,35 +454,35 @@ class _OdayAppState extends State<OdayApp> {
       builder: (ctx, setLocal) {
         return Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+          decoration: BoxDecoration(color: navyCard, borderRadius: BorderRadius.circular(16)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('بيانات التوصيل والدفع', style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
+              const Text('بيانات التوصيل والدفع', style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: Colors.white)),
               const SizedBox(height: 12),
-              TextField(controller: nameC, decoration: const InputDecoration(labelText: 'اسم العميل', border: OutlineInputBorder())),
+              TextField(controller: nameC, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'اسم العميل', border: OutlineInputBorder())),
               const SizedBox(height: 10),
-              TextField(controller: phoneC, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'رقم التليفون', border: OutlineInputBorder())),
+              TextField(controller: phoneC, keyboardType: TextInputType.phone, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'رقم التليفون', border: OutlineInputBorder())),
               const SizedBox(height: 10),
-              TextField(controller: addrC, decoration: const InputDecoration(labelText: 'العنوان', border: OutlineInputBorder())),
+              TextField(controller: addrC, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'العنوان', border: OutlineInputBorder())),
               const SizedBox(height: 12),
-              const Text('طريقة الدفع'),
-              RadioListTile(value: 'كاش عند الاستلام', groupValue: method, title: const Text('كاش عند الاستلام'), onChanged: (v) => setLocal(() => method = v.toString())),
-              RadioListTile(value: 'فودافون كاش', groupValue: method, title: const Text('فودافون كاش'), onChanged: (v) => setLocal(() => method = v.toString())),
-              RadioListTile(value: 'انستا باي', groupValue: method, title: const Text('انستا باي'), onChanged: (v) => setLocal(() => method = v.toString())),
+              const Text('طريقة الدفع', style: TextStyle(color: Colors.white)),
+              RadioListTile(value: 'كاش عند الاستلام', groupValue: method, activeColor: accentOrange, title: const Text('كاش عند الاستلام', style: TextStyle(color: Colors.white)), onChanged: (v) => setLocal(() => method = v.toString())),
+              RadioListTile(value: 'فودافون كاش', groupValue: method, activeColor: accentOrange, title: const Text('فودافون كاش', style: TextStyle(color: Colors.white)), onChanged: (v) => setLocal(() => method = v.toString())),
+              RadioListTile(value: 'انستا باي', groupValue: method, activeColor: accentOrange, title: const Text('انستا باي', style: TextStyle(color: Colors.white)), onChanged: (v) => setLocal(() => method = v.toString())),
               if (method != 'كاش عند الاستلام') ...[
                 const SizedBox(height: 10),
                 Container(
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-                  child: Column(children: [Row(children: [Expanded(child: Text('حول على: ${method == 'فودافون كاش' ? vodafoneNumber : instapayNumber}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))), IconButton(icon: const Icon(Icons.copy), onPressed: () { Clipboard.setData(ClipboardData(text: method == 'فودافون كاش' ? vodafoneNumber : instapayNumber)); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم نسخ الرقم'))); })]), const SizedBox(height: 10), ElevatedButton.icon(onPressed: () async { final picker = ImagePicker(); final x = await picker.pickImage(source: ImageSource.gallery); if (x != null) { setLocal(() => proofPath = x.path); } }, icon: const Icon(Icons.upload), label: Text(proofPath == null ? 'ارفع صورة التحويل' : 'تم رفع الصورة')), if (proofPath != null) Padding(padding: const EdgeInsets.only(top: 10), child: Image.file(File(proofPath!), height: 120))]),
+                  decoration: BoxDecoration(color: accentOrange.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
+                  child: Column(children: [Row(children: [Expanded(child: Text('حول على: ${method == 'فودافون كاش' ? vodafoneNumber : instapayNumber}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white))), IconButton(icon: const Icon(Icons.copy, color: Colors.white), onPressed: () { Clipboard.setData(ClipboardData(text: method == 'فودافون كاش' ? vodafoneNumber : instapayNumber)); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم نسخ الرقم'))); })]), const SizedBox(height: 10), ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: accentOrange), onPressed: () async { final picker = ImagePicker(); final x = await picker.pickImage(source: ImageSource.gallery); if (x != null) { setLocal(() => proofPath = x.path); } }, icon: const Icon(Icons.upload, color: Colors.white), label: Text(proofPath == null ? 'ارفع صورة التحويل' : 'تم رفع الصورة', style: const TextStyle(color: Colors.white))), if (proofPath != null) Padding(padding: const EdgeInsets.only(top: 10), child: Image.file(File(proofPath!), height: 120))]),
                 ),
               ],
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, padding: const EdgeInsets.symmetric(vertical: 14)),
+                  style: ElevatedButton.styleFrom(backgroundColor: accentOrange, padding: const EdgeInsets.symmetric(vertical: 14)),
                   onPressed: () async {
                     if (nameC.text.isEmpty || phoneC.text.isEmpty || addrC.text.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('كمل بياناتك الاول')));
@@ -456,18 +510,18 @@ class _OdayAppState extends State<OdayApp> {
 
   Widget _buildMyOrders() {
     if (orders.isEmpty && repairs.isEmpty) {
-      return const Center(child: Text('لسه مفيش طلبات'));
+      return const Center(child: Text('لسه مفيش طلبات', style: TextStyle(color: Colors.white)));
     }
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const Text('طلبات المتجر', style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
+        const Text('طلبات المتجر', style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: Colors.white)),
         const SizedBox(height: 10),
-        ...orders.map((o) => Card(child: ListTile(title: Text('طلب رقم ${o.id.substring(o.id.length - 4)}'), subtitle: Text('${o.customerName}\n${o.total} ج - ${o.status} - ${o.date}\n${o.items.map((e) => '${e.name} x${e.qty}').join(', ')}'), trailing: Text(o.paymentMethod)))).toList(),
+        ...orders.map((o) => Card(color: navyCard, child: ListTile(title: Text('طلب رقم ${o.id.substring(o.id.length - 4)}', style: const TextStyle(color: Colors.white)), subtitle: Text('${o.customerName}\n${o.total} ج - ${o.status} - ${o.date}\n${o.items.map((e) => '${e.name} x${e.qty}').join(', ')}', style: const TextStyle(color: Colors.white70)), trailing: Text(o.paymentMethod, style: const TextStyle(color: Colors.white))))).toList(),
         const SizedBox(height: 20),
-        const Text('طلبات المندوب والخدمات', style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
+        const Text('طلبات المندوب والخدمات', style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: Colors.white)),
         const SizedBox(height: 10),
-        ...repairs.map((r) => Card(child: ListTile(title: Text('${r.kind} - ${r.customerName}'), subtitle: Text('${r.problem} - ${r.status}'), trailing: Text(r.date)))).toList(),
+        ...repairs.map((r) => Card(color: navyCard, child: ListTile(title: Text('${r.kind} - ${r.customerName}', style: const TextStyle(color: Colors.white)), subtitle: Text('${r.problem} - ${r.status}', style: const TextStyle(color: Colors.white70)), trailing: Text(r.date, style: const TextStyle(color: Colors.white))))).toList(),
       ],
     );
   }
@@ -481,6 +535,7 @@ class _OdayAppState extends State<OdayApp> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: navyCard,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) {
         return Padding(
@@ -489,23 +544,23 @@ class _OdayAppState extends State<OdayApp> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(kind == 'مندوب صيانة موبايل' ? 'اطلب مندوب لصيانة تليفونك' : 'طلب $kind', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                Text(kind == 'مندوب صيانة موبايل' ? 'اطلب مندوب لصيانة تليفونك' : 'طلب $kind', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
                 const SizedBox(height: 6),
-                if (kind == 'مندوب صيانة موبايل') const Text('هنبعتلك مندوب ياخد التليفون من عندك، نصلحه، ونرجعهولك تاني لحد البيت', style: TextStyle(color: Colors.grey)),
+                if (kind == 'مندوب صيانة موبايل') const Text('هنبعتلك مندوب ياخد التليفون من عندك، نصلحه، ونرجعهولك تاني لحد البيت', style: TextStyle(color: Colors.white70)),
                 const SizedBox(height: 16),
-                TextField(controller: nameC, decoration: const InputDecoration(labelText: 'اسم العميل', border: OutlineInputBorder())),
+                TextField(controller: nameC, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'اسم العميل', border: OutlineInputBorder())),
                 const SizedBox(height: 10),
-                TextField(controller: phoneC, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'رقم التليفون', border: OutlineInputBorder())),
+                TextField(controller: phoneC, keyboardType: TextInputType.phone, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'رقم التليفون', border: OutlineInputBorder())),
                 const SizedBox(height: 10),
-                TextField(controller: addrC, decoration: const InputDecoration(labelText: 'العنوان', border: OutlineInputBorder())),
+                TextField(controller: addrC, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'العنوان', border: OutlineInputBorder())),
                 const SizedBox(height: 10),
-                if (kind == 'مندوب صيانة موبايل') ...[TextField(controller: typeC, decoration: const InputDecoration(labelText: 'نوع التليفون - مثال: سامسونج، ايفون', border: OutlineInputBorder())), const SizedBox(height: 10)],
-                TextField(controller: probC, maxLines: 3, decoration: InputDecoration(labelText: kind == 'مندوب صيانة موبايل' ? 'ايه المشكلة في التليفون؟' : 'ايه الشغل المطلوب؟', border: const OutlineInputBorder())),
+                if (kind == 'مندوب صيانة موبايل') ...[TextField(controller: typeC, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'نوع التليفون - مثال: سامسونج، ايفون', border: OutlineInputBorder())), const SizedBox(height: 10)],
+                TextField(controller: probC, maxLines: 3, style: const TextStyle(color: Colors.white), decoration: InputDecoration(labelText: kind == 'مندوب صيانة موبايل' ? 'ايه المشكلة في التليفون؟' : 'ايه الشغل المطلوب؟', border: const OutlineInputBorder())),
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, padding: const EdgeInsets.symmetric(vertical: 14)),
+                    style: ElevatedButton.styleFrom(backgroundColor: accentOrange, padding: const EdgeInsets.symmetric(vertical: 14)),
                     onPressed: () async {
                       if (nameC.text.isEmpty || phoneC.text.isEmpty || addrC.text.isEmpty || probC.text.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('كمل بياناتك الاول')));
@@ -536,6 +591,7 @@ class _OdayAppState extends State<OdayApp> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: navyCard,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) {
         return StatefulBuilder(
@@ -546,24 +602,24 @@ class _OdayAppState extends State<OdayApp> {
                 height: MediaQuery.of(context).size.height * 0.9,
                 child: Column(
                   children: [
-                    const TabBar(tabs: [Tab(text: 'طلبات المتجر'), Tab(text: 'طلبات المندوب'), Tab(text: 'المنتجات')]),
+                    const TabBar(labelColor: Colors.white, tabs: [Tab(text: 'طلبات المتجر'), Tab(text: 'طلبات المندوب'), Tab(text: 'المنتجات')]),
                     Expanded(
                       child: TabBarView(
                         children: [
                           ListView(
                             padding: const EdgeInsets.all(12),
-                            children: orders.map((o) => Card(child: ListTile(title: Text('${o.customerName} - ${o.total} ج'), subtitle: Text('${o.phone}\n${o.address}\n${o.paymentMethod}\n${o.items.map((e) => '${e.name} x${e.qty}').join(', ')}'), trailing: Row(mainAxisSize: MainAxisSize.min, children: [DropdownButton<String>(value: o.status, items: ['جديد', 'قيد التنفيذ', 'تم'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(), onChanged: (v) { setState(() { o.status = v!; _saveAll(); }); setLocal(() {}); }), IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () { setState(() { orders.remove(o); _saveAll(); }); setLocal(() {}); })])))).toList(),
+                            children: orders.map((o) => Card(color: navyBg, child: ListTile(title: Text('${o.customerName} - ${o.total} ج', style: const TextStyle(color: Colors.white)), subtitle: Text('${o.phone}\n${o.address}\n${o.paymentMethod}\n${o.items.map((e) => '${e.name} x${e.qty}').join(', ')}', style: const TextStyle(color: Colors.white70)), trailing: Row(mainAxisSize: MainAxisSize.min, children: [DropdownButton<String>(dropdownColor: navyCard, value: o.status, style: const TextStyle(color: Colors.white), items: ['جديد', 'قيد التنفيذ', 'تم'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(), onChanged: (v) { setState(() { o.status = v!; _saveAll(); }); setLocal(() {}); }), IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () { setState(() { orders.remove(o); _saveAll(); }); setLocal(() {}); })])))).toList(),
                           ),
                           ListView(
                             padding: const EdgeInsets.all(12),
-                            children: repairs.map((r) => Card(child: ListTile(title: Text('${r.kind} - ${r.customerName}'), subtitle: Text('${r.phone}\n${r.address}\n${r.phoneType}\n${r.problem}'), trailing: Row(mainAxisSize: MainAxisSize.min, children: [DropdownButton<String>(value: r.status, items: ['جديد', 'تم استلام التليفون', 'جاري الصيانة', 'تم التسليم', 'تم التواصل', 'تم التنفيذ'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(), onChanged: (v) { setState(() { r.status = v!; _saveAll(); }); setLocal(() {}); }), IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () { setState(() { repairs.remove(r); _saveAll(); }); setLocal(() {}); })])))).toList(),
+                            children: repairs.map((r) => Card(color: navyBg, child: ListTile(title: Text('${r.kind} - ${r.customerName}', style: const TextStyle(color: Colors.white)), subtitle: Text('${r.phone}\n${r.address}\n${r.phoneType}\n${r.problem}', style: const TextStyle(color: Colors.white70)), trailing: Row(mainAxisSize: MainAxisSize.min, children: [DropdownButton<String>(dropdownColor: navyCard, value: r.status, style: const TextStyle(color: Colors.white), items: ['جديد', 'تم استلام التليفون', 'جاري الصيانة', 'تم التسليم', 'تم التواصل', 'تم التنفيذ'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(), onChanged: (v) { setState(() { r.status = v!; _saveAll(); }); setLocal(() {}); }), IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () { setState(() { repairs.remove(r); _saveAll(); }); setLocal(() {}); })])))).toList(),
                           ),
                           ListView(
                             padding: const EdgeInsets.all(12),
                             children: [
-                              ElevatedButton(onPressed: () => _addProductDialog(setLocal, null), child: const Text('اضافة منتج جديد')),
+                              ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: accentOrange), onPressed: () => _addProductDialog(setLocal, null), child: const Text('اضافة منتج جديد', style: TextStyle(color: Colors.white))),
                               const SizedBox(height: 10),
-                              ...products.map((p) => Card(child: ListTile(title: Text(p.name), subtitle: Text('${p.price} ج - ${p.category}'), trailing: Row(mainAxisSize: MainAxisSize.min, children: [IconButton(icon: const Icon(Icons.edit, color: Colors.blue), onPressed: () => _addProductDialog(setLocal, p)), IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () { setState(() { products.remove(p); _saveAll(); }); setLocal(() {}); })])))).toList(),
+                              ...products.map((p) => Card(color: navyBg, child: ListTile(title: Text(p.name, style: const TextStyle(color: Colors.white)), subtitle: Text('${p.price} ج - ${p.category}', style: const TextStyle(color: Colors.white70)), trailing: Row(mainAxisSize: MainAxisSize.min, children: [IconButton(icon: const Icon(Icons.edit, color: accentBlue), onPressed: () => _addProductDialog(setLocal, p)), IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () { setState(() { products.remove(p); _saveAll(); }); setLocal(() {}); })])))).toList(),
                             ],
                           ),
                         ],
@@ -593,17 +649,19 @@ class _OdayAppState extends State<OdayApp> {
         return StatefulBuilder(
           builder: (ctx2, setD) {
             return AlertDialog(
-              title: Text(editP == null ? 'اضافة منتج جديد' : 'تعديل منتج'),
+              backgroundColor: navyCard,
+              title: Text(editP == null ? 'اضافة منتج جديد' : 'تعديل منتج', style: const TextStyle(color: Colors.white)),
               content: SingleChildScrollView(
                 child: Column(
                   children: [
-                    TextField(controller: nameC, decoration: const InputDecoration(labelText: 'اسم المنتج')),
-                    TextField(controller: descC, decoration: const InputDecoration(labelText: 'الوصف')),
-                    TextField(controller: priceC, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'السعر')),
-                    TextField(controller: oldC, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'السعر القديم لو عليه خصم')),
-                    DropdownButton<String>(value: cat, isExpanded: true, items: storeCategories.where((e) => e != 'الكل').map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(), onChanged: (v) => setD(() => cat = v!)),
-                    CheckboxListTile(value: isOffer, title: const Text('عليه خصم؟'), onChanged: (v) => setD(() => isOffer = v!)),
+                    TextField(controller: nameC, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'اسم المنتج')),
+                    TextField(controller: descC, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'الوصف')),
+                    TextField(controller: priceC, keyboardType: TextInputType.number, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'السعر')),
+                    TextField(controller: oldC, keyboardType: TextInputType.number, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'السعر القديم لو عليه خصم')),
+                    DropdownButton<String>(dropdownColor: navyCard, value: cat, isExpanded: true, style: const TextStyle(color: Colors.white), items: storeCategories.where((e) => e != 'الكل').map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(), onChanged: (v) => setD(() => cat = v!)),
+                    CheckboxListTile(value: isOffer, activeColor: accentOrange, title: const Text('عليه خصم؟', style: TextStyle(color: Colors.white)), onChanged: (v) => setD(() => isOffer = v!)),
                     ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(backgroundColor: accentOrange),
                       onPressed: () async {
                         final picker = ImagePicker();
                         final x = await picker.pickImage(source: ImageSource.gallery);
@@ -615,8 +673,8 @@ class _OdayAppState extends State<OdayApp> {
                           setD(() => imgPath = url);
                         }
                       },
-                      icon: const Icon(Icons.image),
-                      label: Text(imgPath == null ? 'اختر صورة' : 'تم اختيار الصورة'),
+                      icon: const Icon(Icons.image, color: Colors.white),
+                      label: Text(imgPath == null ? 'اختر صورة' : 'تم اختيار الصورة', style: const TextStyle(color: Colors.white)),
                     ),
                     if (imgPath != null)
                       Padding(
@@ -629,8 +687,9 @@ class _OdayAppState extends State<OdayApp> {
                 ),
               ),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('الغاء')),
+                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('الغاء', style: TextStyle(color: Colors.white))),
                 ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: accentGreen),
                   onPressed: () {
                     if (nameC.text.isEmpty || priceC.text.isEmpty) return;
                     setState(() {
@@ -650,7 +709,7 @@ class _OdayAppState extends State<OdayApp> {
                     Navigator.pop(ctx);
                     setLocalAdmin(() {});
                   },
-                  child: Text(editP == null ? 'اضافة' : 'حفظ التعديل'),
+                  child: Text(editP == null ? 'اضافة' : 'حفظ التعديل', style: const TextStyle(color: Colors.white)),
                 ),
               ],
             );
