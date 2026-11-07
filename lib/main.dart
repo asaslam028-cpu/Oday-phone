@@ -997,22 +997,30 @@ class _OdayHomeState extends State<OdayHome> {
   }
 
   Widget _buildMyOrders() {
-    if (orders.isEmpty && repairs.isEmpty) {
-      return const Center(child: Text('لسه مفيش طلبات', style: TextStyle(color: Colors.white)));
-    }
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        const Text('طلبات المتجر', style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: Colors.white)),
-        const SizedBox(height: 10),
-        ...orders.map((o) => Card(color: navyCard, child: ListTile(title: Text('طلب رقم ${o.id.substring(o.id.length - 4)}', style: const TextStyle(color: Colors.white)), subtitle: Text('${o.customerName}\n${o.total} ج - ${o.status} - ${o.date}\n${o.items.map((e) => '${e.name} x${e.qty}').join(', ')}', style: const TextStyle(color: Colors.white70)), trailing: Text(o.paymentMethod, style: const TextStyle(color: Colors.white))))).toList(),
-        const SizedBox(height: 20),
-        const Text('طلبات المندوب والخدمات', style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: Colors.white)),
-        const SizedBox(height: 10),
-        ...repairs.map((r) => Card(color: navyCard, child: ListTile(title: Text('${r.kind} - ${r.customerName}', style: TextStyle(color: Colors.white)), subtitle: Text('${r.problem} - ${r.status}', style: TextStyle(color: Colors.white70)), trailing: Text(r.date, style: TextStyle(color: Colors.white))))).toList(),
-      ],
-    );
-  }
+  return StreamBuilder<QuerySnapshot>(
+    stream: FirebaseFirestore.instance.collection('orders').orderBy('time', descending: true).snapshots(),
+    builder: (context, snap) {
+      if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+      if (snap.data!.docs.isEmpty) {
+        return const Center(child: Text('لا يوجد طلبات بعد', style: TextStyle(color: Colors.white)));
+      }
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: snap.data!.docs.map((d) {
+          final data = d.data() as Map<String, dynamic>;
+          return Card(
+            color: navyCard,
+            child: ListTile(
+              title: Text('${data['type'] ?? ''} - ${data['name'] ?? ''}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              subtitle: Text('📞 ${data['phone'] ?? ''}\n📍 ${data['address'] ?? ''}\n📝 ${data['details'] ?? ''}\nالحالة: ${data['status'] ?? ''}', style: const TextStyle(color: Colors.white70)),
+              isThreeLine: true,
+            ),
+          );
+        }).toList(),
+      );
+    },
+  );
+}
 }
 
 class RepairPage extends StatefulWidget {
