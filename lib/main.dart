@@ -984,7 +984,29 @@ class _OdayHomeState extends State<OdayHome> {
                       currentIndex = 3;
                     });
                     await _saveOrderToFirebase(newOrder);
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم استلام طلبك وهنكلمك')));
+
+showDialog(
+  context: context,
+  barrierDismissible: false,
+  builder: (ctx) => AlertDialog(
+    backgroundColor: navyCard,
+    title: const Text('✅ تم استلام طلبك بنجاح', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+    content: Text(
+      'رقم الطلب: ${newOrder.id}\n'
+      'الاسم: ${newOrder.customerName}\n'
+      'المبلغ: ${newOrder.total} جنيه\n'
+      'طريقة الدفع: ${newOrder.paymentMethod}\n'
+      'رقم موبايلك: ${newOrder.phone}\n\n'
+      'هنكلمك للتأكيد في أقرب وقت.\nتقدر تتابع طلبك من "طلباتي" برقم موبايلك.',
+      style: const TextStyle(color: Colors.white70),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () {
+          Navigator.of(ctx).pop();
+        },
+        child: const Text('تمام'),
+      ),
                   },
                   child: isUploading ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white)) : const Text('تأكيد الطلب', style: TextStyle(color: Colors.white, fontSize: 17)),
                 ),
