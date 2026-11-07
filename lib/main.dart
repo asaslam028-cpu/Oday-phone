@@ -30,7 +30,7 @@ class Product {
   String name; String desc; double price; double oldPrice; String category; bool isOffer; bool isFav; String? imagePath; String iconName;
   Product({required this.name, required this.desc, required this.price, this.oldPrice = 0, required this.category, this.isOffer = false, this.isFav = false, this.imagePath, this.iconName = 'phone'});
   Map<String, dynamic> toJson() => {'name': name, 'desc': desc, 'price': price, 'oldPrice': oldPrice, 'category': category, 'isOffer': isOffer, 'isFav': isFav, 'imagePath': imagePath, 'iconName': iconName};
-  factory Product.fromJson(Map<String, dynamic> j) => Product(name: j['name'], desc: j['desc'], price: (j['price'] as num).toDouble(), oldPrice: (j['oldPrice'] as num?)?.toDouble() ?? 0, category: j['category'], isOffer: j['isOffer'] ?? false, isFav: j['isFav'] ?? false, imagePath: j['imagePath'], iconName: j['iconName'] ?? 'phone');
+  factory Product.fromJson(Map<String, dynamic> j) => Product(name: j['name'] ?? '', desc: j['desc'] ?? '', price: (j['price'] as num? ?? 0).toDouble(), oldPrice: (j['oldPrice'] as num?)?.toDouble() ?? 0, category: j['category'] ?? 'اكسسوارات', isOffer: j['isOffer'] ?? false, isFav: j['isFav'] ?? false, imagePath: j['imagePath'], iconName: j['iconName'] ?? 'phone');
 }
 
 IconData getProductIcon(String name) {
@@ -70,8 +70,6 @@ class OdayApp extends StatefulWidget {
 class _OdayAppState extends State<OdayApp> {
   bool showStart = true;
   int currentIndex = 0;
-  int adminTapCount = 0;
-  int lastAdminTapTime = 0;
   String searchText = '';
   String storeCategory = 'الكل';
   List<OrderItem> cart = [];
@@ -91,6 +89,21 @@ class _OdayAppState extends State<OdayApp> {
   void initState() {
     super.initState();
     _loadAll();
+    _loadProductsFromFirebase();
+  }
+
+  Future<void> _loadProductsFromFirebase() async {
+    try {
+      final snap = await FirebaseFirestore.instance.collection('products').get();
+      if (snap.docs.isNotEmpty) {
+        setState(() {
+          products = snap.docs.map((d) => Product.fromJson(d.data())).toList();
+        });
+        _saveAll();
+      }
+    } catch (e) {
+      debugPrint('Products firebase error: $e');
+    }
   }
 
   Future<void> _loadAll() async {
@@ -164,51 +177,21 @@ class _OdayAppState extends State<OdayApp> {
     );
   }
 
-  void _onTitleTap() {
-    final now = DateTime.now().millisecondsSinceEpoch;
-    if (now - lastAdminTapTime > 3000) {
-      adminTapCount = 0;
-    }
-    lastAdminTapTime = now;
-    adminTapCount = adminTapCount + 1;
-    if (adminTapCount >= 3) {
-      adminTapCount = 0;
-      _askAdminPassword();
-    }
-  }
-
-  void _askAdminPassword() {
-    final passC = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          backgroundColor: navyCard,
-          title: const Text('دخول الادمن', style: TextStyle(color: Colors.white)),
-          content: TextField(
-            controller: passC,
-            obscureText: true,
-            keyboardType: TextInputType.visiblePassword,
-            style: const TextStyle(color: Colors.white),
-            decoration: const InputDecoration(labelText: 'اكتب الباسورد', border: OutlineInputBorder()),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('الغاء', style: TextStyle(color: Colors.white))),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: accentOrange),
-              onPressed: () {
-                if (passC.text.trim() == '123+') {
-                  Navigator.pop(ctx);
-                  _openAdmin();
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('الباسورد غلط')));
-                }
-              },
-              child: const Text('دخول', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        );
-      },
+  void _openRepairPage(String kind) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (ctx) => RepairPage(
+          kind: kind,
+          onSubmit: (r) async {
+            setState(() {
+              repairs.add(r);
+              _saveAll();
+            });
+            await _saveRepairToFirebase(r);
+          },
+        ),
+      ),
     );
   }
 
@@ -225,11 +208,7 @@ class _OdayAppState extends State<OdayApp> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  GestureDetector(
-                    onLongPress: _askAdminPassword,
-                    onTap: () => setState(() => showStart = false),
-                    child: Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: accentOrange, borderRadius: BorderRadius.circular(30)), child: const Icon(Icons.phone_android, size: 70, color: Colors.white)),
-                  ),
+                  Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: accentOrange, borderRadius: BorderRadius.circular(30)), child: const Icon(Icons.phone_android, size: 70, color: Colors.white)),
                   const SizedBox(height: 20),
                   const Text('عدي فون', style: TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
@@ -266,16 +245,8 @@ class _OdayAppState extends State<OdayApp> {
         backgroundColor: navyBg,
         appBar: AppBar(
           backgroundColor: navyDark,
-          title: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: _onTitleTap,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-              child: const Text('عدي فون', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            ),
-          ),
+          title: const Text('عدي فون', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           actions: [
-            IconButton(icon: const Icon(Icons.settings, color: Colors.white), tooltip: 'الادمن', onPressed: _askAdminPassword),
             Stack(
               children: [
                 IconButton(icon: const Icon(Icons.shopping_cart, color: Colors.white), onPressed: () => setState(() => currentIndex = 2)),
@@ -321,17 +292,14 @@ class _OdayAppState extends State<OdayApp> {
           const SizedBox(height: 12),
           TextField(onChanged: (v) => setState(() => searchText = v), style: const TextStyle(color: Colors.white), decoration: InputDecoration(hintText: 'دور على جراب، شاحن، سماعة، سكرينة...', prefixIcon: const Icon(Icons.search, color: Colors.white70), filled: true, fillColor: navyCard, border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none))),
           const SizedBox(height: 16),
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: () => setState(() => currentIndex = 1),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(color: navyCard, borderRadius: BorderRadius.circular(16), border: Border.all(color: accentOrange)),
-                child: Row(children: [Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: accentOrange, borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.store, color: Colors.white, size: 30)), const SizedBox(width: 12), const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('المتجر', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)), Text('جرابات وشواحن وسماعات وسكرينات', style: TextStyle(color: Colors.white70))])), const Icon(Icons.arrow_forward_ios, size: 17, color: Colors.white70)]),
-              ),
+          InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => setState(() => currentIndex = 1),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(color: navyCard, borderRadius: BorderRadius.circular(16), border: Border.all(color: accentOrange)),
+              child: Row(children: [Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: accentOrange, borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.store, color: Colors.white, size: 30)), const SizedBox(width: 12), const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('المتجر', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)), Text('جرابات وشواحن وسماعات وسكرينات', style: TextStyle(color: Colors.white70))])), const Icon(Icons.arrow_forward_ios, size: 17, color: Colors.white70)]),
             ),
           ),
           const SizedBox(height: 16),
@@ -350,7 +318,7 @@ class _OdayAppState extends State<OdayApp> {
                   width: double.infinity,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-                    onPressed: () => _openRepairForm('مندوب صيانة موبايل'),
+                    onPressed: () => _openRepairPage('مندوب صيانة موبايل'),
                     child: const Text('اطلب المندوب دلوقتي - دوس هنا', style: TextStyle(fontWeight: FontWeight.bold, color: accentOrange, fontSize: 17)),
                   ),
                 ),
@@ -368,16 +336,6 @@ class _OdayAppState extends State<OdayApp> {
           Row(children: [Expanded(child: _otherServiceCard('نجارة', Icons.handyman, 'نجارة')), const SizedBox(width: 12), Expanded(child: _otherServiceCard('كهربائي', Icons.electrical_services, 'كهربائي'))]),
           const SizedBox(height: 10),
           const Text('مفيش اي خدمات تانية غير دول', style: TextStyle(color: Colors.white54, fontSize: 12)),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.white24), padding: const EdgeInsets.symmetric(vertical: 12)),
-              onPressed: _askAdminPassword,
-              icon: const Icon(Icons.settings, color: Colors.white70),
-              label: const Text('دخول الادمن', style: TextStyle(color: Colors.white70)),
-            ),
-          ),
           const SizedBox(height: 20),
         ],
       ),
@@ -397,7 +355,7 @@ class _OdayAppState extends State<OdayApp> {
           width: double.infinity,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: accentOrange, padding: const EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-            onPressed: () => _openRepairForm(kind),
+            onPressed: () => _openRepairPage(kind),
             child: const Text('اطلب دلوقتي', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ),
@@ -570,197 +528,65 @@ class _OdayAppState extends State<OdayApp> {
       ],
     );
   }
+}
 
-  void _openRepairForm(String kind) {
-    final nameC = TextEditingController();
-    final phoneC = TextEditingController();
-    final addrC = TextEditingController();
-    final typeC = TextEditingController();
-    final probC = TextEditingController();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: navyCard,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 16, right: 16, top: 20),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(kind == 'مندوب صيانة موبايل' ? 'اطلب مندوب لصيانة تليفونك' : 'طلب $kind', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-                const SizedBox(height: 6),
-                if (kind == 'مندوب صيانة موبايل') const Text('هنبعتلك مندوب ياخد التليفون من عندك، نصلحه، ونرجعهولك تاني لحد البيت', style: TextStyle(color: Colors.white70)),
-                const SizedBox(height: 16),
-                TextField(controller: nameC, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'اسم العميل', border: OutlineInputBorder())),
-                const SizedBox(height: 10),
-                TextField(controller: phoneC, keyboardType: TextInputType.phone, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'رقم التليفون', border: OutlineInputBorder())),
-                const SizedBox(height: 10),
-                TextField(controller: addrC, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'العنوان', border: OutlineInputBorder())),
-                const SizedBox(height: 10),
-                if (kind == 'مندوب صيانة موبايل') ...[TextField(controller: typeC, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'نوع التليفون - مثال: سامسونج، ايفون', border: OutlineInputBorder())), const SizedBox(height: 10)],
-                TextField(controller: probC, maxLines: 3, style: const TextStyle(color: Colors.white), decoration: InputDecoration(labelText: kind == 'مندوب صيانة موبايل' ? 'ايه المشكلة في التليفون؟' : 'ايه الشغل المطلوب؟', border: const OutlineInputBorder())),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: accentOrange, padding: const EdgeInsets.symmetric(vertical: 14)),
-                    onPressed: () async {
-                      if (nameC.text.isEmpty || phoneC.text.isEmpty || addrC.text.isEmpty || probC.text.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('كمل بياناتك الاول')));
-                        return;
-                      }
-                      final newRepair = RepairRequest(id: DateTime.now().millisecondsSinceEpoch.toString(), customerName: nameC.text, phone: phoneC.text, address: addrC.text, phoneType: typeC.text, problem: probC.text, kind: kind, date: DateTime.now().toString().substring(0, 10));
-                      setState(() {
-                        repairs.add(newRepair);
-                        _saveAll();
-                      });
-                      await _saveRepairToFirebase(newRepair);
-                      Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم استلام طلبك وهنكلمك نحدد معاد المندوب')));
-                    },
-                    child: const Text('ارسال الطلب', style: TextStyle(color: Colors.white, fontSize: 17)),
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
+class RepairPage extends StatefulWidget {
+  final String kind;
+  final Function(RepairRequest) onSubmit;
+  const RepairPage({super.key, required this.kind, required this.onSubmit});
+  @override
+  State<RepairPage> createState() => _RepairPageState();
+}
+
+class _RepairPageState extends State<RepairPage> {
+  final nameC = TextEditingController();
+  final phoneC = TextEditingController();
+  final addrC = TextEditingController();
+  final typeC = TextEditingController();
+  final probC = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    final isPhone = widget.kind == 'مندوب صيانة موبايل';
+    return Scaffold(
+      backgroundColor: navyBg,
+      appBar: AppBar(backgroundColor: navyDark, title: Text(isPhone ? 'اطلب مندوب لصيانة تليفونك' : 'طلب ${widget.kind}', style: const TextStyle(color: Colors.white))),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (isPhone) const Text('هنبعتلك مندوب ياخد التليفون من عندك، نصلحه، ونرجعهولك تاني لحد البيت', style: TextStyle(color: Colors.white70)),
+            const SizedBox(height: 16),
+            TextField(controller: nameC, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'اسم العميل', border: OutlineInputBorder())),
+            const SizedBox(height: 10),
+            TextField(controller: phoneC, keyboardType: TextInputType.phone, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'رقم التليفون', border: OutlineInputBorder())),
+            const SizedBox(height: 10),
+            TextField(controller: addrC, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'العنوان', border: OutlineInputBorder())),
+            const SizedBox(height: 10),
+            if (isPhone) ...[TextField(controller: typeC, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'نوع التليفون - مثال: سامسونج، ايفون', border: OutlineInputBorder())), const SizedBox(height: 10)],
+            TextField(controller: probC, maxLines: 3, style: const TextStyle(color: Colors.white), decoration: InputDecoration(labelText: isPhone ? 'ايه المشكلة في التليفون؟' : 'ايه الشغل المطلوب؟', border: const OutlineInputBorder())),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: accentOrange, padding: const EdgeInsets.symmetric(vertical: 14)),
+                onPressed: () {
+                  if (nameC.text.isEmpty || phoneC.text.isEmpty || addrC.text.isEmpty || probC.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('كمل بياناتك الاول')));
+                    return;
+                  }
+                  final r = RepairRequest(id: DateTime.now().millisecondsSinceEpoch.toString(), customerName: nameC.text, phone: phoneC.text, address: addrC.text, phoneType: typeC.text, problem: probC.text, kind: widget.kind, date: DateTime.now().toString().substring(0, 10));
+                  widget.onSubmit(r);
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم استلام طلبك وهنكلمك نحدد معاد المندوب')));
+                },
+                child: const Text('ارسال الطلب', style: TextStyle(color: Colors.white, fontSize: 17)),
+              ),
             ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _openAdmin() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: navyCard,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx2, setLocal) {
-            return DefaultTabController(
-              length: 3,
-              child: SizedBox(
-                height: MediaQuery.of(context).size.height * 0.9,
-                child: Column(
-                  children: [
-                    const TabBar(labelColor: Colors.white, tabs: [Tab(text: 'طلبات المتجر'), Tab(text: 'طلبات المندوب'), Tab(text: 'المنتجات')]),
-                    Expanded(
-                      child: TabBarView(
-                        children: [
-                          ListView(
-                            padding: const EdgeInsets.all(12),
-                            children: orders.map((o) => Card(color: navyBg, child: ListTile(title: Text('${o.customerName} - ${o.total} ج', style: const TextStyle(color: Colors.white)), subtitle: Text('${o.phone}\n${o.address}\n${o.paymentMethod}\n${o.items.map((e) => '${e.name} x${e.qty}').join(', ')}', style: const TextStyle(color: Colors.white70)), trailing: Row(mainAxisSize: MainAxisSize.min, children: [DropdownButton<String>(dropdownColor: navyCard, value: o.status, style: const TextStyle(color: Colors.white), items: ['جديد', 'قيد التنفيذ', 'تم'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(), onChanged: (v) { setState(() { o.status = v!; _saveAll(); }); setLocal(() {}); }), IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () { setState(() { orders.remove(o); _saveAll(); }); setLocal(() {}); })])))).toList(),
-                          ),
-                          ListView(
-                            padding: const EdgeInsets.all(12),
-                            children: repairs.map((r) => Card(color: navyBg, child: ListTile(title: Text('${r.kind} - ${r.customerName}', style: const TextStyle(color: Colors.white)), subtitle: Text('${r.phone}\n${r.address}\n${r.phoneType}\n${r.problem}', style: const TextStyle(color: Colors.white70)), trailing: Row(mainAxisSize: MainAxisSize.min, children: [DropdownButton<String>(dropdownColor: navyCard, value: r.status, style: const TextStyle(color: Colors.white), items: ['جديد', 'تم استلام التليفون', 'جاري الصيانة', 'تم التسليم', 'تم التواصل', 'تم التنفيذ'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(), onChanged: (v) { setState(() { r.status = v!; _saveAll(); }); setLocal(() {}); }), IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () { setState(() { repairs.remove(r); _saveAll(); }); setLocal(() {}); })])))).toList(),
-                          ),
-                          ListView(
-                            padding: const EdgeInsets.all(12),
-                            children: [
-                              ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: accentOrange), onPressed: () => _addProductDialog(setLocal, null), child: const Text('اضافة منتج جديد', style: TextStyle(color: Colors.white))),
-                              const SizedBox(height: 10),
-                              ...products.map((p) => Card(color: navyBg, child: ListTile(title: Text(p.name, style: const TextStyle(color: Colors.white)), subtitle: Text('${p.price} ج - ${p.category}', style: const TextStyle(color: Colors.white70)), trailing: Row(mainAxisSize: MainAxisSize.min, children: [IconButton(icon: const Icon(Icons.edit, color: accentBlue), onPressed: () => _addProductDialog(setLocal, p)), IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () { setState(() { products.remove(p); _saveAll(); }); setLocal(() {}); })])))).toList(),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _addProductDialog(Function setLocalAdmin, Product? editP) {
-    final nameC = TextEditingController(text: editP?.name ?? '');
-    final descC = TextEditingController(text: editP?.desc ?? '');
-    final priceC = TextEditingController(text: editP != null ? '${editP.price}' : '');
-    final oldC = TextEditingController(text: editP != null ? '${editP.oldPrice}' : '');
-    String cat = editP?.category ?? 'جرابات';
-    bool isOffer = editP?.isOffer ?? false;
-    String? imgPath = editP?.imagePath;
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx2, setD) {
-            return AlertDialog(
-              backgroundColor: navyCard,
-              title: Text(editP == null ? 'اضافة منتج جديد' : 'تعديل منتج', style: const TextStyle(color: Colors.white)),
-              content: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    TextField(controller: nameC, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'اسم المنتج')),
-                    TextField(controller: descC, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'الوصف')),
-                    TextField(controller: priceC, keyboardType: TextInputType.number, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'السعر')),
-                    TextField(controller: oldC, keyboardType: TextInputType.number, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'السعر القديم لو عليه خصم')),
-                    DropdownButton<String>(dropdownColor: navyCard, value: cat, isExpanded: true, style: const TextStyle(color: Colors.white), items: storeCategories.where((e) => e != 'الكل').map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(), onChanged: (v) => setD(() => cat = v!)),
-                    CheckboxListTile(value: isOffer, activeColor: accentOrange, title: const Text('عليه خصم؟', style: TextStyle(color: Colors.white)), onChanged: (v) => setD(() => isOffer = v!)),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(backgroundColor: accentOrange),
-                      onPressed: () async {
-                        final picker = ImagePicker();
-                        final x = await picker.pickImage(source: ImageSource.gallery);
-                        if (x != null) {
-                          final file = File(x.path);
-                          final ref = FirebaseStorage.instance.ref().child('products/${DateTime.now().millisecondsSinceEpoch}.jpg');
-                          await ref.putFile(file);
-                          final url = await ref.getDownloadURL();
-                          setD(() => imgPath = url);
-                        }
-                      },
-                      icon: const Icon(Icons.image, color: Colors.white),
-                      label: Text(imgPath == null ? 'اختر صورة' : 'تم اختيار الصورة', style: const TextStyle(color: Colors.white)),
-                    ),
-                    if (imgPath != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 10),
-                        child: imgPath!.startsWith('http')
-                            ? Image.network(imgPath!, height: 120)
-                            : Image.file(File(imgPath!), height: 120),
-                      ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('الغاء', style: TextStyle(color: Colors.white))),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: accentGreen),
-                  onPressed: () {
-                    if (nameC.text.isEmpty || priceC.text.isEmpty) return;
-                    setState(() {
-                      if (editP == null) {
-                        products.add(Product(name: nameC.text, desc: descC.text, price: double.tryParse(priceC.text) ?? 0, oldPrice: double.tryParse(oldC.text) ?? 0, category: cat, isOffer: isOffer, imagePath: imgPath, iconName: 'phone'));
-                      } else {
-                        editP.name = nameC.text;
-                        editP.desc = descC.text;
-                        editP.price = double.tryParse(priceC.text) ?? 0;
-                        editP.oldPrice = double.tryParse(oldC.text) ?? 0;
-                        editP.category = cat;
-                        editP.isOffer = isOffer;
-                        editP.imagePath = imgPath;
-                      }
-                      _saveAll();
-                    });
-                    Navigator.pop(ctx);
-                    setLocalAdmin(() {});
-                  },
-                  child: Text(editP == null ? 'اضافة' : 'حفظ التعديل', style: const TextStyle(color: Colors.white)),
-                ),
-              ],
-            );
-          },
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 }
