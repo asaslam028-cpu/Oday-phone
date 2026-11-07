@@ -18,6 +18,7 @@ void main() async {
 
 const String vodafoneNumber = '01015519180';
 const String instapayNumber = '01069068091';
+const String adminPassword = '2911';
 const Color navyBg = Color(0xFF0A1931);
 const Color navyCard = Color(0xFF13294B);
 const Color navyDark = Color(0xFF071224);
@@ -81,17 +82,35 @@ class RepairRequest {
   );
 }
 
-class OdayApp extends StatefulWidget {
+class OdayApp extends StatelessWidget {
   const OdayApp({super.key});
   @override
-  State<OdayApp> createState() => _OdayAppState();
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        scaffoldBackgroundColor: navyBg,
+        appBarTheme: const AppBarTheme(backgroundColor: navyDark, foregroundColor: Colors.white),
+        bottomNavigationBarTheme: const BottomNavigationBarThemeData(backgroundColor: navyDark, selectedItemColor: accentOrange, unselectedItemColor: Colors.grey),
+        inputDecorationTheme: InputDecorationTheme(filled: true, fillColor: navyCard, labelStyle: const TextStyle(color: Colors.white70), hintStyle: const TextStyle(color: Colors.white54), border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)), enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Colors.white24))),
+      ),
+      home: const OdayHome(),
+    );
+  }
 }
 
-class _OdayAppState extends State<OdayApp> {
+class OdayHome extends StatefulWidget {
+  const OdayHome({super.key});
+  @override
+  State<OdayHome> createState() => _OdayHomeState();
+}
+
+class _OdayHomeState extends State<OdayHome> {
   bool showStart = true;
   int currentIndex = 0;
   String searchText = '';
   String storeCategory = 'الكل';
+  int logoTaps = 0;
   List<OrderItem> cart = [];
   List<AppOrder> orders = [];
   List<RepairRequest> repairs = [];
@@ -172,6 +191,14 @@ class _OdayAppState extends State<OdayApp> {
     }
   }
 
+  Future<void> _saveProductToFirebase(Product p) async {
+    try {
+      await FirebaseFirestore.instance.collection('products').add(p.toJson());
+    } catch (e) {
+      debugPrint('Product firebase error: $e');
+    }
+  }
+
   double get cartTotal => cart.fold(0, (sum, e) => sum + e.price * e.qty);
 
   List<Product> get filteredStore {
@@ -200,7 +227,7 @@ class _OdayAppState extends State<OdayApp> {
   }
 
   void _openRepairPage(String kind) {
-    Navigator.of(context, rootNavigator: true).push(
+    Navigator.of(context).push(
       MaterialPageRoute(
         builder: (ctx) => RepairPage(
           kind: kind,
@@ -216,18 +243,78 @@ class _OdayAppState extends State<OdayApp> {
     );
   }
 
+  void _onLogoTap() {
+    logoTaps = logoTaps + 1;
+    if (logoTaps >= 5) {
+      logoTaps = 0;
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (ctx) => AdminLoginPage(
+            onSuccess: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (ctx2) => AdminDashboard(
+                    products: products,
+                    orders: orders,
+                    repairs: repairs,
+                    onAddProduct: (p) {
+                      setState(() {
+                        products.add(p);
+                        _saveAll();
+                      });
+                      _saveProductToFirebase(p);
+                    },
+                    onUpdateProduct: (index, p) {
+                      setState(() {
+                        products[index] = p;
+                        _saveAll();
+                      });
+                    },
+                    onDeleteProduct: (index) {
+                      setState(() {
+                        products.removeAt(index);
+                        _saveAll();
+                      });
+                    },
+                    onUpdateOrderStatus: (index, status) {
+                      setState(() {
+                        orders[index].status = status;
+                        _saveAll();
+                      });
+                    },
+                    onDeleteOrder: (index) {
+                      setState(() {
+                        orders.removeAt(index);
+                        _saveAll();
+                      });
+                    },
+                    onUpdateRepairStatus: (index, status) {
+                      setState(() {
+                        repairs[index].status = status;
+                        _saveAll();
+                      });
+                    },
+                    onDeleteRepair: (index) {
+                      setState(() {
+                        repairs.removeAt(index);
+                        _saveAll();
+                      });
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        scaffoldBackgroundColor: navyBg,
-        appBarTheme: const AppBarTheme(backgroundColor: navyDark, foregroundColor: Colors.white),
-        bottomNavigationBarTheme: const BottomNavigationBarThemeData(backgroundColor: navyDark, selectedItemColor: accentOrange, unselectedItemColor: Colors.grey),
-        inputDecorationTheme: InputDecorationTheme(filled: true, fillColor: navyCard, labelStyle: const TextStyle(color: Colors.white70), hintStyle: const TextStyle(color: Colors.white54), border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)), enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Colors.white24))),
-      ),
-      home: showStart ? _buildStartPage() : _buildMainPage(),
-    );
+    if (showStart) return _buildStartPage();
+    return _buildMainPage();
   }
 
   Widget _buildStartPage() {
@@ -239,7 +326,10 @@ class _OdayAppState extends State<OdayApp> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: accentOrange, borderRadius: BorderRadius.circular(30)), child: const Icon(Icons.phone_android, size: 70, color: Colors.white)),
+              GestureDetector(
+                onTap: _onLogoTap,
+                child: Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: accentOrange, borderRadius: BorderRadius.circular(30)), child: const Icon(Icons.phone_android, size: 70, color: Colors.white)),
+              ),
               const SizedBox(height: 20),
               const Text('عدي فون', style: TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
@@ -601,6 +691,378 @@ class _RepairPageState extends State<RepairPage> {
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم استلام طلبك وهنكلمك نحدد معاد المندوب')));
                 },
                 child: const Text('ارسال الطلب', style: TextStyle(color: Colors.white, fontSize: 17)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class AdminLoginPage extends StatefulWidget {
+  final VoidCallback onSuccess;
+  const AdminLoginPage({super.key, required this.onSuccess});
+  @override
+  State<AdminLoginPage> createState() => _AdminLoginPageState();
+}
+
+class _AdminLoginPageState extends State<AdminLoginPage> {
+  final passC = TextEditingController();
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: navyBg,
+      appBar: AppBar(backgroundColor: navyDark, title: const Text('دخول الادمن', style: TextStyle(color: Colors.white))),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            const SizedBox(height: 20),
+            const Icon(Icons.lock, size: 70, color: accentOrange),
+            const SizedBox(height: 20),
+            TextField(controller: passC, keyboardType: TextInputType.number, obscureText: true, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'كلمة السر', border: OutlineInputBorder())),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: accentOrange, padding: const EdgeInsets.symmetric(vertical: 14)),
+                onPressed: () {
+                  if (passC.text.trim() == adminPassword) {
+                    widget.onSuccess();
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('كلمة السر غلط')));
+                  }
+                },
+                child: const Text('دخول', style: TextStyle(color: Colors.white, fontSize: 17)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class AdminDashboard extends StatefulWidget {
+  final List<Product> products;
+  final List<AppOrder> orders;
+  final List<RepairRequest> repairs;
+  final Function(Product) onAddProduct;
+  final Function(int, Product) onUpdateProduct;
+  final Function(int) onDeleteProduct;
+  final Function(int, String) onUpdateOrderStatus;
+  final Function(int) onDeleteOrder;
+  final Function(int, String) onUpdateRepairStatus;
+  final Function(int) onDeleteRepair;
+  const AdminDashboard({super.key, required this.products, required this.orders, required this.repairs, required this.onAddProduct, required this.onUpdateProduct, required this.onDeleteProduct, required this.onUpdateOrderStatus, required this.onDeleteOrder, required this.onUpdateRepairStatus, required this.onDeleteRepair});
+  @override
+  State<AdminDashboard> createState() => _AdminDashboardState();
+}
+
+class _AdminDashboardState extends State<AdminDashboard> {
+  int tab = 0;
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: navyBg,
+      appBar: AppBar(backgroundColor: navyDark, title: const Text('لوحة تحكم الادمن', style: TextStyle(color: Colors.white))),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Expanded(child: _adminStat('منتجات', '${widget.products.length}')),
+                const SizedBox(width: 10),
+                Expanded(child: _adminStat('طلبات', '${widget.orders.length}')),
+                const SizedBox(width: 10),
+                Expanded(child: _adminStat('خدمات', '${widget.repairs.length}')),
+              ],
+            ),
+          ),
+          Row(
+            children: [
+              Expanded(child: _adminTabButton('المنتجات', 0)),
+              Expanded(child: _adminTabButton('الطلبات', 1)),
+              Expanded(child: _adminTabButton('الخدمات', 2)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Expanded(child: tab == 0 ? _productsTab() : tab == 1 ? _ordersTab() : _repairsTab()),
+        ],
+      ),
+      floatingActionButton: tab == 0
+          ? FloatingActionButton(
+              backgroundColor: accentOrange,
+              onPressed: () async {
+                final p = await Navigator.of(context).push<Product>(MaterialPageRoute(builder: (ctx) => const AdminProductForm()));
+                if (p != null) {
+                  widget.onAddProduct(p);
+                  setState(() {});
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم اضافة المنتج')));
+                }
+              },
+              child: const Icon(Icons.add, color: Colors.white),
+            )
+          : null,
+    );
+  }
+
+  Widget _adminStat(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: navyCard, borderRadius: BorderRadius.circular(14)),
+      child: Column(children: [Text(value, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)), Text(label, style: const TextStyle(color: Colors.white70))]),
+    );
+  }
+
+  Widget _adminTabButton(String label, int index) {
+    final sel = tab == index;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(backgroundColor: sel ? accentOrange : navyCard),
+        onPressed: () => setState(() => tab = index),
+        child: Text(label, style: const TextStyle(color: Colors.white)),
+      ),
+    );
+  }
+
+  Widget _productsTab() {
+    if (widget.products.isEmpty) return const Center(child: Text('مفيش منتجات', style: TextStyle(color: Colors.white)));
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: widget.products.length,
+      itemBuilder: (ctx, i) {
+        final p = widget.products[i];
+        return Card(
+          color: navyCard,
+          child: ListTile(
+            leading: p.imagePath != null
+                ? ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.file(File(p.imagePath!), width: 50, height: 50, fit: BoxFit.cover))
+                : Container(width: 50, height: 50, decoration: BoxDecoration(color: Colors.white12, borderRadius: BorderRadius.circular(10)), child: Icon(getProductIcon(p.iconName), color: accentBlue)),
+            title: Text(p.name, style: const TextStyle(color: Colors.white)),
+            subtitle: Text('${p.price} ج - ${p.category} - ${p.isOffer ? 'عرض' : 'عادي'}', style: const TextStyle(color: Colors.white70)),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(icon: const Icon(Icons.edit, color: Colors.white), onPressed: () async {
+                  final updated = await Navigator.of(context).push<Product>(MaterialPageRoute(builder: (ctx2) => AdminProductForm(existing: p)));
+                  if (updated != null) {
+                    widget.onUpdateProduct(i, updated);
+                    setState(() {});
+                  }
+                }),
+                IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () {
+                  widget.onDeleteProduct(i);
+                  setState(() {});
+                }),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _ordersTab() {
+    if (widget.orders.isEmpty) return const Center(child: Text('مفيش طلبات', style: TextStyle(color: Colors.white)));
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: widget.orders.length,
+      itemBuilder: (ctx, i) {
+        final o = widget.orders[i];
+        return Card(
+          color: navyCard,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${o.customerName} - ${o.phone}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                Text('${o.address} - ${o.date}', style: const TextStyle(color: Colors.white70)),
+                Text('${o.items.map((e) => '${e.name} x${e.qty}').join(', ')}', style: const TextStyle(color: Colors.white70)),
+                Text('الاجمالي: ${o.total} ج - ${o.paymentMethod}', style: const TextStyle(color: accentOrange)),
+                if (o.proofPath != null) Padding(padding: const EdgeInsets.only(top: 10), child: Image.file(File(o.proofPath!), height: 120)),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButton<String>(
+                        value: o.status,
+                        dropdownColor: navyCard,
+                        style: const TextStyle(color: Colors.white),
+                        isExpanded: true,
+                        items: ['جديد', 'قيد التنفيذ', 'تم التوصيل', 'ملغي'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                        onChanged: (v) {
+                          if (v != null) {
+                            widget.onUpdateOrderStatus(i, v);
+                            setState(() {});
+                          }
+                        },
+                      ),
+                    ),
+                    IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () {
+                      widget.onDeleteOrder(i);
+                      setState(() {});
+                    }),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _repairsTab() {
+    if (widget.repairs.isEmpty) return const Center(child: Text('مفيش خدمات', style: TextStyle(color: Colors.white)));
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: widget.repairs.length,
+      itemBuilder: (ctx, i) {
+        final r = widget.repairs[i];
+        return Card(
+          color: navyCard,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${r.kind} - ${r.customerName}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                Text('${r.phone} - ${r.address}', style: const TextStyle(color: Colors.white70)),
+                Text(r.problem, style: const TextStyle(color: Colors.white70)),
+                Text(r.date, style: const TextStyle(color: Colors.white70)),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButton<String>(
+                        value: r.status,
+                        dropdownColor: navyCard,
+                        style: const TextStyle(color: Colors.white),
+                        isExpanded: true,
+                        items: ['جديد', 'قيد التنفيذ', 'تم', 'ملغي'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                        onChanged: (v) {
+                          if (v != null) {
+                            widget.onUpdateRepairStatus(i, v);
+                            setState(() {});
+                          }
+                        },
+                      ),
+                    ),
+                    IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () {
+                      widget.onDeleteRepair(i);
+                      setState(() {});
+                    }),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class AdminProductForm extends StatefulWidget {
+  final Product? existing;
+  const AdminProductForm({super.key, this.existing});
+  @override
+  State<AdminProductForm> createState() => _AdminProductFormState();
+}
+
+class _AdminProductFormState extends State<AdminProductForm> {
+  late TextEditingController nameC;
+  late TextEditingController descC;
+  late TextEditingController priceC;
+  late TextEditingController oldPriceC;
+  String category = 'جرابات';
+  bool isOffer = false;
+  String? imagePath;
+  final cats = ['جرابات', 'شواحن', 'سماعات', 'سكرينات', 'اكسسوارات'];
+
+  @override
+  void initState() {
+    super.initState();
+    nameC = TextEditingController(text: widget.existing?.name ?? '');
+    descC = TextEditingController(text: widget.existing?.desc ?? '');
+    priceC = TextEditingController(text: widget.existing != null ? '${widget.existing!.price}' : '');
+    oldPriceC = TextEditingController(text: widget.existing != null ? '${widget.existing!.oldPrice}' : '');
+    category = widget.existing?.category ?? 'جرابات';
+    isOffer = widget.existing?.isOffer ?? false;
+    imagePath = widget.existing?.imagePath;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: navyBg,
+      appBar: AppBar(backgroundColor: navyDark, title: Text(widget.existing == null ? 'اضافة منتج جديد' : 'تعديل منتج', style: const TextStyle(color: Colors.white))),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            GestureDetector(
+              onTap: () async {
+                final picker = ImagePicker();
+                final x = await picker.pickImage(source: ImageSource.gallery);
+                if (x != null) setState(() => imagePath = x.path);
+              },
+              child: Container(
+                width: double.infinity,
+                height: 180,
+                decoration: BoxDecoration(color: navyCard, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white24)),
+                child: imagePath != null
+                    ? ClipRRect(borderRadius: BorderRadius.circular(16), child: Image.file(File(imagePath!), fit: BoxFit.cover))
+                    : const Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.add_a_photo, size: 50, color: Colors.white70), SizedBox(height: 10), Text('دوس هنا واختار صورة المنتج', style: TextStyle(color: Colors.white))]),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(controller: nameC, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'اسم المنتج', border: OutlineInputBorder())),
+            const SizedBox(height: 10),
+            TextField(controller: descC, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'وصف المنتج', border: OutlineInputBorder())),
+            const SizedBox(height: 10),
+            TextField(controller: priceC, keyboardType: TextInputType.number, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'السعر', border: OutlineInputBorder())),
+            const SizedBox(height: 10),
+            TextField(controller: oldPriceC, keyboardType: TextInputType.number, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'السعر القديم قبل العرض', border: OutlineInputBorder())),
+            const SizedBox(height: 10),
+            DropdownButtonFormField<String>(
+              value: category,
+              dropdownColor: navyCard,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(labelText: 'القسم', border: OutlineInputBorder()),
+              items: cats.map((c) => DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(color: Colors.white)))).toList(),
+              onChanged: (v) => setState(() => category = v ?? 'جرابات'),
+            ),
+            SwitchListTile(value: isOffer, activeColor: accentOrange, title: const Text('منتج عرض؟', style: TextStyle(color: Colors.white)), onChanged: (v) => setState(() => isOffer = v)),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: accentOrange, padding: const EdgeInsets.symmetric(vertical: 14)),
+                onPressed: () {
+                  if (nameC.text.isEmpty || priceC.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('اكتب الاسم والسعر الاول')));
+                    return;
+                  }
+                  final p = Product(
+                    name: nameC.text,
+                    desc: descC.text,
+                    price: double.tryParse(priceC.text) ?? 0,
+                    oldPrice: double.tryParse(oldPriceC.text) ?? 0,
+                    category: category,
+                    isOffer: isOffer,
+                    isFav: widget.existing?.isFav ?? false,
+                    imagePath: imagePath,
+                    iconName: widget.existing?.iconName ?? 'phone',
+                  );
+                  Navigator.of(context).pop(p);
+                },
+                child: const Text('حفظ المنتج', style: TextStyle(color: Colors.white, fontSize: 17)),
               ),
             ),
           ],
