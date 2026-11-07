@@ -43,19 +43,42 @@ class OrderItem {
   String name; int qty; double price;
   OrderItem({required this.name, required this.qty, required this.price});
   Map<String, dynamic> toJson() => {'name': name, 'qty': qty, 'price': price};
-  factory OrderItem.fromJson(Map<String, dynamic> j) => OrderItem(name: j['name'], qty: j['qty'], price: (j['price'] as num).toDouble());
+  factory OrderItem.fromJson(Map<String, dynamic> j) => OrderItem(name: j['name'] ?? '', qty: j['qty'] ?? 1, price: (j['price'] as num? ?? 0).toDouble());
 }
 
 class AppOrder {
   String id; String customerName; String phone; String address; String paymentMethod; String status; List<OrderItem> items; double total; String? proofPath; String date;
   AppOrder({required this.id, required this.customerName, required this.phone, required this.address, required this.paymentMethod, required this.status, required this.items, required this.total, this.proofPath, required this.date});
   Map<String, dynamic> toJson() => {'id': id, 'customerName': customerName, 'phone': phone, 'address': address, 'paymentMethod': paymentMethod, 'status': status, 'items': items.map((e) => e.toJson()).toList(), 'total': total, 'proofPath': proofPath, 'date': date};
+  factory AppOrder.fromJson(Map<String, dynamic> j) => AppOrder(
+    id: j['id'] ?? '',
+    customerName: j['customerName'] ?? '',
+    phone: j['phone'] ?? '',
+    address: j['address'] ?? '',
+    paymentMethod: j['paymentMethod'] ?? '',
+    status: j['status'] ?? 'جديد',
+    items: (j['items'] as List? ?? []).map((e) => OrderItem.fromJson(Map<String, dynamic>.from(e))).toList(),
+    total: (j['total'] as num? ?? 0).toDouble(),
+    proofPath: j['proofPath'],
+    date: j['date'] ?? '',
+  );
 }
 
 class RepairRequest {
   String id; String customerName; String phone; String address; String phoneType; String problem; String kind; String date; String status;
   RepairRequest({required this.id, required this.customerName, required this.phone, required this.address, required this.phoneType, required this.problem, required this.kind, required this.date, this.status = 'جديد'});
   Map<String, dynamic> toJson() => {'id': id, 'customerName': customerName, 'phone': phone, 'address': address, 'phoneType': phoneType, 'problem': problem, 'kind': kind, 'date': date, 'status': status};
+  factory RepairRequest.fromJson(Map<String, dynamic> j) => RepairRequest(
+    id: j['id'] ?? '',
+    customerName: j['customerName'] ?? '',
+    phone: j['phone'] ?? '',
+    address: j['address'] ?? '',
+    phoneType: j['phoneType'] ?? '',
+    problem: j['problem'] ?? '',
+    kind: j['kind'] ?? 'مندوب صيانة موبايل',
+    date: j['date'] ?? '',
+    status: j['status'] ?? 'جديد',
+  );
 }
 
 class OdayApp extends StatefulWidget {
@@ -85,7 +108,7 @@ class _OdayAppState extends State<OdayApp> {
   @override
   void initState() {
     super.initState();
-    _loadLocal();
+    _loadAll();
     _loadProductsFromFirebase();
   }
 
@@ -96,36 +119,41 @@ class _OdayAppState extends State<OdayApp> {
         setState(() {
           products = snap.docs.map((d) => Product.fromJson(d.data())).toList();
         });
-        _saveLocal();
+        _saveAll();
       }
     } catch (e) {
       debugPrint('Products error: $e');
     }
   }
 
-  Future<void> _loadLocal() async {
+  Future<void> _loadAll() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      final cStr = prefs.getString('cart');
-      if (cStr != null) {
-        cart = (jsonDecode(cStr) as List).map((e) => OrderItem.fromJson(e)).toList();
+      final pStr = prefs.getString('products');
+      if (pStr != null) {
+        products = (jsonDecode(pStr) as List).map((e) => Product.fromJson(Map<String, dynamic>.from(e))).toList();
       }
       final oStr = prefs.getString('orders');
       if (oStr != null) {
-        orders = (jsonDecode(oStr) as List).map((e) => AppOrder.fromJson(e)).toList();
+        orders = (jsonDecode(oStr) as List).map((e) => AppOrder.fromJson(Map<String, dynamic>.from(e))).toList();
       }
       final rStr = prefs.getString('repairs');
       if (rStr != null) {
-        repairs = (jsonDecode(rStr) as List).map((e) => RepairRequest.fromJson(e)).toList();
+        repairs = (jsonDecode(rStr) as List).map((e) => RepairRequest.fromJson(Map<String, dynamic>.from(e))).toList();
+      }
+      final cStr = prefs.getString('cart');
+      if (cStr != null) {
+        cart = (jsonDecode(cStr) as List).map((e) => OrderItem.fromJson(Map<String, dynamic>.from(e))).toList();
       }
     });
   }
 
-  Future<void> _saveLocal() async {
+  Future<void> _saveAll() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('cart', jsonEncode(cart.map((e) => e.toJson()).toList()));
+    await prefs.setString('products', jsonEncode(products.map((e) => e.toJson()).toList()));
     await prefs.setString('orders', jsonEncode(orders.map((e) => e.toJson()).toList()));
     await prefs.setString('repairs', jsonEncode(repairs.map((e) => e.toJson()).toList()));
+    await prefs.setString('cart', jsonEncode(cart.map((e) => e.toJson()).toList()));
   }
 
   Future<void> _saveOrderToFirebase(AppOrder o) async {
@@ -165,7 +193,7 @@ class _OdayAppState extends State<OdayApp> {
         cart.add(OrderItem(name: p.name, qty: 1, price: p.price));
       }
     });
-    _saveLocal();
+    _saveAll();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('تم اضافته الى السلة - ${p.name}'), backgroundColor: accentGreen, duration: const Duration(seconds: 1)),
     );
@@ -179,7 +207,7 @@ class _OdayAppState extends State<OdayApp> {
           onSubmit: (r) async {
             setState(() {
               repairs.add(r);
-              _saveLocal();
+              _saveAll();
             });
             await _saveRepairToFirebase(r);
           },
@@ -409,7 +437,7 @@ class _OdayAppState extends State<OdayApp> {
           ),
           Padding(
             padding: const EdgeInsets.all(10),
-            child: Row(children: [Expanded(child: SizedBox(height: 44, child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: accentOrange, padding: const EdgeInsets.symmetric(vertical: 10), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))), onPressed: () => _addToCart(p), child: const Text('اضافة +', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold))))), IconButton(onPressed: () { setState(() { p.isFav = !p.isFav; }); }, icon: Icon(p.isFav ? Icons.favorite : Icons.favorite_border, color: Colors.red))]),
+            child: Row(children: [Expanded(child: SizedBox(height: 44, child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: accentOrange, padding: const EdgeInsets.symmetric(vertical: 10), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))), onPressed: () => _addToCart(p), child: const Text('اضافة +', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold))))), IconButton(onPressed: () { setState(() { p.isFav = !p.isFav; _saveAll(); }); }, icon: Icon(p.isFav ? Icons.favorite : Icons.favorite_border, color: Colors.red))]),
           ),
         ],
       ),
@@ -427,7 +455,7 @@ class _OdayAppState extends State<OdayApp> {
           ...cart.asMap().entries.map((entry) {
             final idx = entry.key;
             final item = entry.value;
-            return Card(color: navyCard, child: ListTile(title: Text(item.name, style: const TextStyle(color: Colors.white)), subtitle: Text('${item.price} ج', style: const TextStyle(color: Colors.white70)), trailing: Row(mainAxisSize: MainAxisSize.min, children: [IconButton(icon: const Icon(Icons.remove, color: Colors.white), onPressed: () { setState(() { if (item.qty > 1) { item.qty = item.qty - 1; } else { cart.removeAt(idx); } _saveLocal(); }); }), Text('${item.qty}', style: const TextStyle(color: Colors.white)), IconButton(icon: const Icon(Icons.add, color: Colors.white), onPressed: () { setState(() { item.qty = item.qty + 1; _saveLocal(); }); }), IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () { setState(() { cart.removeAt(idx); _saveLocal(); }); })])));
+            return Card(color: navyCard, child: ListTile(title: Text(item.name, style: const TextStyle(color: Colors.white)), subtitle: Text('${item.price} ج', style: const TextStyle(color: Colors.white70)), trailing: Row(mainAxisSize: MainAxisSize.min, children: [IconButton(icon: const Icon(Icons.remove, color: Colors.white), onPressed: () { setState(() { if (item.qty > 1) { item.qty = item.qty - 1; } else { cart.removeAt(idx); } _saveAll(); }); }), Text('${item.qty}', style: const TextStyle(color: Colors.white)), IconButton(icon: const Icon(Icons.add, color: Colors.white), onPressed: () { setState(() { item.qty = item.qty + 1; _saveAll(); }); }), IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () { setState(() { cart.removeAt(idx); _saveAll(); }); })])));
           }).toList(),
           const SizedBox(height: 10),
           Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: navyCard, borderRadius: BorderRadius.circular(14)), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('الاجمالي', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.white)), Text('$cartTotal ج', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: accentOrange))])),
@@ -486,7 +514,7 @@ class _OdayAppState extends State<OdayApp> {
                     setState(() {
                       orders.add(newOrder);
                       cart.clear();
-                      _saveLocal();
+                      _saveAll();
                       currentIndex = 3;
                     });
                     await _saveOrderToFirebase(newOrder);
