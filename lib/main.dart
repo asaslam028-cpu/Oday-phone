@@ -197,40 +197,6 @@ class _OdayAppState extends State<OdayApp> {
 
   @override
   Widget build(BuildContext context) {
-    if (showStart) {
-      return MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: Scaffold(
-          backgroundColor: navyBg,
-          body: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: accentOrange, borderRadius: BorderRadius.circular(30)), child: const Icon(Icons.phone_android, size: 70, color: Colors.white)),
-                  const SizedBox(height: 20),
-                  const Text('عدي فون', style: TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 10),
-                  const Text('مرحبا بكم في عدي فون', style: TextStyle(color: Colors.white, fontSize: 20)),
-                  const SizedBox(height: 10),
-                  const Text('صيانة موبايلات ومتجر اكسسوارات', style: TextStyle(color: Colors.white70, fontSize: 16), textAlign: TextAlign.center),
-                  const SizedBox(height: 30),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: accentOrange, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-                      onPressed: () => setState(() => showStart = false),
-                      child: const Text('ابدأ', style: TextStyle(fontSize: 20, color: Colors.white)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    }
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -241,36 +207,72 @@ class _OdayAppState extends State<OdayApp> {
         textTheme: const TextTheme(bodyMedium: TextStyle(color: Colors.white), bodyLarge: TextStyle(color: Colors.white), titleMedium: TextStyle(color: Colors.white)),
         inputDecorationTheme: InputDecorationTheme(filled: true, fillColor: navyCard, labelStyle: const TextStyle(color: Colors.white70), hintStyle: const TextStyle(color: Colors.white54), border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)), enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Colors.white24))),
       ),
-      home: Scaffold(
-        backgroundColor: navyBg,
-        appBar: AppBar(
-          backgroundColor: navyDark,
-          title: const Text('عدي فون', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          actions: [
-            Stack(
-              children: [
-                IconButton(icon: const Icon(Icons.shopping_cart, color: Colors.white), onPressed: () => setState(() => currentIndex = 2)),
-                if (cart.isNotEmpty)
-                  Positioned(right: 6, top: 6, child: Container(padding: const EdgeInsets.all(4), decoration: const BoxDecoration(color: accentOrange, shape: BoxShape.circle), child: Text('${cart.length}', style: const TextStyle(color: Colors.white, fontSize: 12)))),
-              ],
-            ),
-          ],
+      home: showStart ? _buildStartPage() : _buildMainPage(),
+    );
+  }
+
+  Widget _buildStartPage() {
+    return Scaffold(
+      backgroundColor: navyBg,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: accentOrange, borderRadius: BorderRadius.circular(30)), child: const Icon(Icons.phone_android, size: 70, color: Colors.white)),
+              const SizedBox(height: 20),
+              const Text('عدي فون', style: TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 10),
+              const Text('مرحبا بكم في عدي فون', style: TextStyle(color: Colors.white, fontSize: 20)),
+              const SizedBox(height: 10),
+              const Text('صيانة موبايلات ومتجر اكسسوارات', style: TextStyle(color: Colors.white70, fontSize: 16), textAlign: TextAlign.center),
+              const SizedBox(height: 30),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: accentOrange, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                  onPressed: () => setState(() => showStart = false),
+                  child: const Text('ابدأ', style: TextStyle(fontSize: 20, color: Colors.white)),
+                ),
+              ),
+            ],
+          ),
         ),
-        body: _buildBody(),
-        bottomNavigationBar: BottomNavigationBar(
-          backgroundColor: navyDark,
-          currentIndex: currentIndex,
-          selectedItemColor: accentOrange,
-          unselectedItemColor: Colors.grey,
-          type: BottomNavigationBarType.fixed,
-          onTap: (i) => setState(() => currentIndex = i),
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'الرئيسية'),
-            BottomNavigationBarItem(icon: Icon(Icons.store), label: 'المتجر'),
-            BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'السلة'),
-            BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'طلباتي'),
-          ],
-        ),
+      ),
+    );
+  }
+
+  Widget _buildMainPage() {
+    return Scaffold(
+      backgroundColor: navyBg,
+      appBar: AppBar(
+        backgroundColor: navyDark,
+        title: const Text('عدي فون', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        actions: [
+          Stack(
+            children: [
+              IconButton(icon: const Icon(Icons.shopping_cart, color: Colors.white), onPressed: () => setState(() => currentIndex = 2)),
+              if (cart.isNotEmpty)
+                Positioned(right: 6, top: 6, child: Container(padding: const EdgeInsets.all(4), decoration: const BoxDecoration(color: accentOrange, shape: BoxShape.circle), child: Text('${cart.length}', style: const TextStyle(color: Colors.white, fontSize: 12)))),
+            ],
+          ),
+        ],
+      ),
+      body: _buildBody(),
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: navyDark,
+        currentIndex: currentIndex,
+        selectedItemColor: accentOrange,
+        unselectedItemColor: Colors.grey,
+        type: BottomNavigationBarType.fixed,
+        onTap: (i) => setState(() => currentIndex = i),
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'الرئيسية'),
+          BottomNavigationBarItem(icon: Icon(Icons.store), label: 'المتجر'),
+          BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'السلة'),
+          BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'طلباتي'),
+        ],
       ),
     );
   }
@@ -292,13 +294,11 @@ class _OdayAppState extends State<OdayApp> {
           const SizedBox(height: 12),
           TextField(onChanged: (v) => setState(() => searchText = v), style: const TextStyle(color: Colors.white), decoration: InputDecoration(hintText: 'دور على جراب، شاحن، سماعة، سكرينة...', prefixIcon: const Icon(Icons.search, color: Colors.white70), filled: true, fillColor: navyCard, border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none))),
           const SizedBox(height: 16),
-          InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: () => setState(() => currentIndex = 1),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(color: navyCard, borderRadius: BorderRadius.circular(16), border: Border.all(color: accentOrange)),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: navyCard, padding: const EdgeInsets.all(20), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: accentOrange))),
+              onPressed: () => setState(() => currentIndex = 1),
               child: Row(children: [Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: accentOrange, borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.store, color: Colors.white, size: 30)), const SizedBox(width: 12), const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('المتجر', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)), Text('جرابات وشواحن وسماعات وسكرينات', style: TextStyle(color: Colors.white70))])), const Icon(Icons.arrow_forward_ios, size: 17, color: Colors.white70)]),
             ),
           ),
