@@ -225,7 +225,11 @@ class _OdayAppState extends State<OdayApp> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: accentOrange, borderRadius: BorderRadius.circular(30)), child: const Icon(Icons.phone_android, size: 70, color: Colors.white)),
+                  GestureDetector(
+                    onLongPress: _askAdminPassword,
+                    onTap: () => setState(() => showStart = false),
+                    child: Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: accentOrange, borderRadius: BorderRadius.circular(30)), child: const Icon(Icons.phone_android, size: 70, color: Colors.white)),
+                  ),
                   const SizedBox(height: 20),
                   const Text('عدي فون', style: TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
@@ -271,6 +275,7 @@ class _OdayAppState extends State<OdayApp> {
             ),
           ),
           actions: [
+            IconButton(icon: const Icon(Icons.settings, color: Colors.white), tooltip: 'الادمن', onPressed: _askAdminPassword),
             Stack(
               children: [
                 IconButton(icon: const Icon(Icons.shopping_cart, color: Colors.white), onPressed: () => setState(() => currentIndex = 2)),
@@ -330,26 +335,26 @@ class _OdayAppState extends State<OdayApp> {
             ),
           ),
           const SizedBox(height: 16),
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: () => _openRepairForm('مندوب صيانة موبايل'),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFF1E3A5F), accentOrange]), borderRadius: BorderRadius.circular(16)),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(children: [Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(10)), child: const Icon(Icons.delivery_dining, color: Colors.white, size: 30)), const SizedBox(width: 10), const Expanded(child: Text('اطلب مندوب لصيانة تليفونك', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)))]),
-                    const SizedBox(height: 10),
-                    const Text('هنبعتلك مندوب ياخد التليفون من عندك، نصلحه، ونرجعهولك تاني لحد البيت', style: TextStyle(color: Colors.white, fontSize: 15)),
-                    const SizedBox(height: 12),
-                    Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)), child: const Text('اطلب المندوب دلوقتي - دوس هنا', style: TextStyle(fontWeight: FontWeight.bold, color: accentOrange))),
-                  ],
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFF1E3A5F), accentOrange]), borderRadius: BorderRadius.circular(16)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(10)), child: const Icon(Icons.delivery_dining, color: Colors.white, size: 30)), const SizedBox(width: 10), const Expanded(child: Text('اطلب مندوب لصيانة تليفونك', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)))]),
+                const SizedBox(height: 10),
+                const Text('هنبعتلك مندوب ياخد التليفون من عندك، نصلحه، ونرجعهولك تاني لحد البيت', style: TextStyle(color: Colors.white, fontSize: 15)),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                    onPressed: () => _openRepairForm('مندوب صيانة موبايل'),
+                    child: const Text('اطلب المندوب دلوقتي - دوس هنا', style: TextStyle(fontWeight: FontWeight.bold, color: accentOrange, fontSize: 17)),
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
           const SizedBox(height: 20),
@@ -364,23 +369,39 @@ class _OdayAppState extends State<OdayApp> {
           const SizedBox(height: 10),
           const Text('مفيش اي خدمات تانية غير دول', style: TextStyle(color: Colors.white54, fontSize: 12)),
           const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.white24), padding: const EdgeInsets.symmetric(vertical: 12)),
+              onPressed: _askAdminPassword,
+              icon: const Icon(Icons.settings, color: Colors.white70),
+              label: const Text('دخول الادمن', style: TextStyle(color: Colors.white70)),
+            ),
+          ),
+          const SizedBox(height: 20),
         ],
       ),
     );
   }
 
   Widget _otherServiceCard(String title, IconData icon, String kind) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () => _openRepairForm(kind),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: navyCard, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white24)),
-          child: Column(children: [Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: accentBlue.withOpacity(0.2), shape: BoxShape.circle), child: Icon(icon, size: 32, color: accentBlue)), const SizedBox(height: 10), Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)), const Text('اطلب دلوقتي - دوس هنا', style: TextStyle(color: accentOrange, fontSize: 13))]),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: navyCard, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white24)),
+      child: Column(children: [
+        Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: accentBlue.withOpacity(0.2), shape: BoxShape.circle), child: Icon(icon, size: 32, color: accentBlue)),
+        const SizedBox(height: 10),
+        Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)),
+        const SizedBox(height: 10),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: accentOrange, padding: const EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+            onPressed: () => _openRepairForm(kind),
+            child: const Text('اطلب دلوقتي', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
         ),
-      ),
+      ]),
     );
   }
 
