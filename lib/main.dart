@@ -9,6 +9,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:http/http.dart' as http;
+import 'package:video_player/video_player.dart';
 import 'firebase_options.dart';
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(
@@ -62,6 +63,31 @@ Future<String?> uploadImageToStorage(File file, String folder) async {
     return null;
   }
 }
+
+// === الإضافة الجديدة - رفع الفيديو ===
+Future<String?> uploadVideoToStorage(File file) async {
+  try {
+    const String cloudName = 'eggmsevw';
+    const String preset = 'oday_phone';
+    final url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/video/upload');
+    var request = http.MultipartRequest('POST', url)
+      ..fields['upload_preset'] = preset
+      ..files.add(await http.MultipartFile.fromPath('file', file.path));
+    var response = await request.send();
+    var res = await http.Response.fromStream(response);
+    if (res.statusCode == 200) {
+      var data = json.decode(res.body);
+      return data['secure_url'];
+    } else {
+      debugPrint('Video upload error: ${res.body}');
+      return null;
+    }
+  } catch (e) {
+    debugPrint('Video upload error: $e');
+    return null;
+  }
+}
+// === نهاية الإضافة ===
 
 Widget buildImageWidget(String? path, {double? height, double? width, BoxFit fit = BoxFit.cover}) {
   if (path == null || path.isEmpty) {
@@ -158,7 +184,7 @@ class _OdayHomeState extends State<OdayHome> {
   String searchText = '';
   String storeCategory = 'الكل';
   int logoTaps = 0;
-  // === الإضافة الجديدة - البانر 5 صور + الشريط ===
+  // === الإضافة الجديدة - البانر 5 صور + الشريط + الفيديو ===
   int heroIndex = 0;
   PageController _heroController = PageController();
   Timer? _heroTimer;
@@ -170,6 +196,8 @@ class _OdayHomeState extends State<OdayHome> {
     'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=800',
     'https://images.unsplash.com/photo-1601524909162-ae8725290836?w=800',
   ];
+  String heroVideoUrl = '';
+  VideoPlayerController? _videoController;
   // === نهاية الإضافة ===
   List<OrderItem> cart = [];
   List<AppOrder> orders = [];
@@ -194,6 +222,7 @@ class _OdayHomeState extends State<OdayHome> {
       const Duration(seconds: 2),
       (t) {
         if (!mounted || heroImages.isEmpty) return;
+        if (heroVideoUrl.isNotEmpty) return;
         heroIndex = (heroIndex + 1) % heroImages.length;
         if (_heroController.hasClients) {
           _heroController.animateToPage(
@@ -208,12 +237,31 @@ class _OdayHomeState extends State<OdayHome> {
     // === نهاية الإضافة ===
   }
 
-  // === الإضافة الجديدة - قفل التايمر ===
+  // === الإضافة الجديدة - قفل التايمر والفيديو ===
   @override
   void dispose() {
     _heroTimer?.cancel();
     _heroController.dispose();
+    _videoController?.dispose();
     super.dispose();
+  }
+  // === نهاية الإضافة ===
+
+  // === الإضافة الجديدة - تشغيل الفيديو ===
+  Future<void> _initVideo(String url) async {
+    if (url.isEmpty) return;
+    await _videoController?.dispose();
+    final c = VideoPlayerController.networkUrl(Uri.parse(url));
+    _videoController = c;
+    try {
+      await c.initialize();
+      await c.setVolume(0);
+      await c.setLooping(true);
+      await c.play();
+      if (mounted) setState(() {});
+    } catch (e) {
+      debugPrint('Video error: $e');
+    }
   }
   // === نهاية الإضافة ===
 
@@ -250,7 +298,7 @@ class _OdayHomeState extends State<OdayHome> {
       if (cStr != null) {
         cart = (jsonDecode(cStr) as List).map((e) => OrderItem.fromJson(Map<String, dynamic>.from(e))).toList();
       }
-      // === الإضافة الجديدة - تحميل صور البانر وكلام الشريط ===
+      // === الإضافة الجديدة - تحميل صور البانر وكلام الشريط والفيديو ===
       final hStr = prefs.getString('heroImages');
       if (hStr != null && hStr.isNotEmpty) {
         heroImages = List<String>.from(jsonDecode(hStr));
@@ -259,8 +307,17 @@ class _OdayHomeState extends State<OdayHome> {
       if (tStr != null && tStr.isNotEmpty) {
         tickerText = tStr;
       }
+      final vStr = prefs.getString('heroVideoUrl');
+      if (vStr != null && vStr.isNotEmpty) {
+        heroVideoUrl = vStr;
+      }
       // === نهاية الإضافة ===
     });
+    // === الإضافة الجديدة - لو فيه فيديو محفوظ شغله ===
+    if (heroVideoUrl.isNotEmpty) {
+      _initVideo(heroVideoUrl);
+    }
+    // === نهاية الإضافة ===
   }
 
   Future<void> _saveAll() async {
@@ -269,9 +326,10 @@ class _OdayHomeState extends State<OdayHome> {
     await prefs.setString('orders', jsonEncode(orders.map((e) => e.toJson()).toList()));
     await prefs.setString('repairs', jsonEncode(repairs.map((e) => e.toJson()).toList()));
     await prefs.setString('cart', jsonEncode(cart.map((e) => e.toJson()).toList()));
-    // === الإضافة الجديدة - حفظ صور البانر وكلام الشريط ===
+    // === الإضافة الجديدة - حفظ صور البانر وكلام الشريط والفيديو ===
     await prefs.setString('heroImages', jsonEncode(heroImages));
     await prefs.setString('tickerText', tickerText);
+    await prefs.setString('heroVideoUrl', heroVideoUrl);
     // === نهاية الإضافة ===
   }
 
@@ -358,9 +416,10 @@ class _OdayHomeState extends State<OdayHome> {
                     products: products,
                     orders: orders,
                     repairs: repairs,
-                    // === الإضافة الجديدة - تمرير البانر والشريط للأدمن ===
+                    // === الإضافة الجديدة - تمرير البانر والشريط والفيديو للأدمن ===
                     heroImages: heroImages,
                     tickerText: tickerText,
+                    heroVideoUrl: heroVideoUrl,
                     onUpdateHeroImages: (list) {
                       setState(() {
                         heroImages = list;
@@ -373,6 +432,20 @@ class _OdayHomeState extends State<OdayHome> {
                         tickerText = txt;
                         _saveAll();
                       });
+                    },
+                    onUpdateHeroVideo: (url) async {
+                      setState(() {
+                        heroVideoUrl = url;
+                        _saveAll();
+                      });
+                      if (url.isEmpty) {
+                        await _videoController?.pause();
+                        await _videoController?.dispose();
+                        _videoController = null;
+                        setState(() {});
+                      } else {
+                        await _initVideo(url);
+                      }
                     },
                     // === نهاية الإضافة ===
                     onAddProduct: (p) {
@@ -510,8 +583,77 @@ class _OdayHomeState extends State<OdayHome> {
     return _buildHome();
   }
 
-  // === الإضافة الجديدة - البانر بقى 5 صور بيقلبوا لوحدهم ===
+  // === الإضافة الجديدة - البانر بقى فيديو أو 5 صور ===
   Widget _buildHeroBanner() {
+    // لو فيه فيديو، شغل الفيديو
+    if (heroVideoUrl.isNotEmpty) {
+      return Column(
+        children: [
+          Container(
+            height: 180,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Stack(
+                children: [
+                  if (_videoController != null && _videoController!.value.isInitialized)
+                    SizedBox(
+                      width: double.infinity,
+                      height: 180,
+                      child: FittedBox(
+                        fit: BoxFit.cover,
+                        child: SizedBox(
+                          width: _videoController!.value.size.width,
+                          height: _videoController!.value.size.height,
+                          child: VideoPlayer(_videoController!),
+                        ),
+                      ),
+                    )
+                  else
+                    Container(
+                      color: navyCard,
+                      child: const Center(child: CircularProgressIndicator(color: accentOrange)),
+                    ),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        colors: [Colors.black.withOpacity(0.5), Colors.transparent],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 12,
+                    left: 12,
+                    right: 12,
+                    child: Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'عروض عدي فون 🔥',
+                            style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(backgroundColor: accentOrange),
+                          onPressed: () => setState(() => currentIndex = 1),
+                          child: const Text('اطلب دلوقتي', style: TextStyle(color: Colors.white)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+    // لو مفيش فيديو، شغل الـ 5 صور زي ما كان
     if (heroImages.isEmpty) {
       return const SizedBox();
     }
@@ -984,8 +1126,10 @@ class AdminDashboard extends StatefulWidget {
   // === الإضافة الجديدة ===
   final List<String> heroImages;
   final String tickerText;
+  final String heroVideoUrl;
   final Function(List<String>) onUpdateHeroImages;
   final Function(String) onUpdateTicker;
+  final Function(String) onUpdateHeroVideo;
   // === نهاية الإضافة ===
   final Function(Product) onAddProduct;
   final Function(int, Product) onUpdateProduct;
@@ -994,7 +1138,7 @@ class AdminDashboard extends StatefulWidget {
   final Function(int) onDeleteOrder;
   final Function(int, String) onUpdateRepairStatus;
   final Function(int) onDeleteRepair;
-  const AdminDashboard({super.key, required this.products, required this.orders, required this.repairs, required this.heroImages, required this.tickerText, required this.onUpdateHeroImages, required this.onUpdateTicker, required this.onAddProduct, required this.onUpdateProduct, required this.onDeleteProduct, required this.onUpdateOrderStatus, required this.onDeleteOrder, required this.onUpdateRepairStatus, required this.onDeleteRepair});
+  const AdminDashboard({super.key, required this.products, required this.orders, required this.repairs, required this.heroImages, required this.tickerText, required this.heroVideoUrl, required this.onUpdateHeroImages, required this.onUpdateTicker, required this.onUpdateHeroVideo, required this.onAddProduct, required this.onUpdateProduct, required this.onDeleteProduct, required this.onUpdateOrderStatus, required this.onDeleteOrder, required this.onUpdateRepairStatus, required this.onDeleteRepair});
   @override
   State<AdminDashboard> createState() => _AdminDashboardState();
 }
@@ -1004,6 +1148,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   // === الإضافة الجديدة ===
   late TextEditingController tickerC;
   bool isUploadingHero = false;
+  bool isUploadingVideo = false;
   @override
   void initState() {
     super.initState();
@@ -1080,13 +1225,72 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  // === الإضافة الجديدة - تاب البانر والشريط كله ===
+  // === الإضافة الجديدة - تاب البانر والشريط كله + زرار الفيديو ===
   Widget _bannerTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // --- قسم الفيديو ---
+          const Text(
+            'فيديو البانر',
+            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            widget.heroVideoUrl.isEmpty ? 'مفيش فيديو دلوقتي - شغال بالصور' : 'فيه فيديو شغال دلوقتي',
+            style: const TextStyle(color: Colors.white70, fontSize: 13),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(backgroundColor: accentBlue, padding: const EdgeInsets.symmetric(vertical: 14)),
+              onPressed: () async {
+                final picker = ImagePicker();
+                final x = await picker.pickVideo(source: ImageSource.gallery);
+                if (x == null) return;
+                setState(() => isUploadingVideo = true);
+                final url = await uploadVideoToStorage(File(x.path));
+                setState(() => isUploadingVideo = false);
+                if (url != null) {
+                  await widget.onUpdateHeroVideo(url);
+                  setState(() {});
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('تم اضافة فيديو البانر')),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('فشل رفع الفيديو - جرب تاني')),
+                  );
+                }
+              },
+              icon: const Icon(Icons.video_library, color: Colors.white),
+              label: isUploadingVideo
+                  ? const Text('جاري رفع الفيديو... استنى شوية', style: TextStyle(color: Colors.white))
+                  : const Text('اختار فيديو جديد', style: TextStyle(color: Colors.white)),
+            ),
+          ),
+          const SizedBox(height: 10),
+          if (widget.heroVideoUrl.isNotEmpty)
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red, padding: const EdgeInsets.symmetric(vertical: 12)),
+                onPressed: () async {
+                  await widget.onUpdateHeroVideo('');
+                  setState(() {});
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('تم مسح الفيديو ورجعنا للصور')),
+                  );
+                },
+                icon: const Icon(Icons.delete, color: Colors.white),
+                label: const Text('امسح الفيديو وارجع للصور', style: TextStyle(color: Colors.white)),
+              ),
+            ),
+          const SizedBox(height: 24),
+          // --- قسم الشريط ---
           const Text(
             'كلام الشريط الرفيع',
             style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
@@ -1118,6 +1322,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
           const Text(
             'صور البانر المتحرك - 5 صور',
             style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'الصور دي بتشتغل بس لو مفيش فيديو.',
+            style: TextStyle(color: Colors.white54, fontSize: 12),
           ),
           const SizedBox(height: 10),
           ...widget.heroImages.asMap().entries.map((e) {
