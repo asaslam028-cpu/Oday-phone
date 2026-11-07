@@ -29,10 +29,21 @@ const Color accentGreen = Color(0xFF22C55E);
 
 Future<String?> uploadImageToStorage(File file, String folder) async {
   try {
-    final ref = FirebaseStorage.instance.ref().child('$folder/${DateTime.now().millisecondsSinceEpoch}.jpg');
-    await ref.putFile(file);
-    final url = await ref.getDownloadURL();
-    return url;
+    const String cloudName = 'eggmsevw';
+    const String preset = 'oday_phone';
+    final url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
+    var request = http.MultipartRequest('POST', url)
+      ..fields['upload_preset'] = preset
+      ..files.add(await http.MultipartFile.fromPath('file', file.path));
+    var response = await request.send();
+    var res = await http.Response.fromStream(response);
+    if (res.statusCode == 200) {
+      var data = json.decode(res.body);
+      return data['secure_url'];
+    } else {
+      debugPrint('Upload error: ${res.body}');
+      return null;
+    }
   } catch (e) {
     debugPrint('Upload error: $e');
     return null;
