@@ -20,12 +20,12 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  await FirebaseMessaging.instance.requestPermission();
-  await FirebaseMessaging.instance.subscribeToTopic('admin');
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    debugPrint('New admin notification: ${message.notification?.title}');
-  });
+ // FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+ // await FirebaseMessaging.instance.requestPermission();
+ // await FirebaseMessaging.instance.subscribeToTopic('admin');
+ // FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+   // debugPrint('New admin notification: ${message.notification?.title}');
+//  });
   runApp(const OdayApp());
 }
 
