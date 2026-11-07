@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -337,7 +338,14 @@ class _OdayAppState extends State<OdayApp> {
             height: 140,
             width: double.infinity,
             decoration: BoxDecoration(color: Colors.grey[200], borderRadius: const BorderRadius.vertical(top: Radius.circular(14))),
-            child: p.imagePath != null ? ClipRRect(borderRadius: const BorderRadius.vertical(top: Radius.circular(14)), child: Image.file(File(p.imagePath!), fit: BoxFit.cover)) : Icon(getProductIcon(p.iconName), size: 50, color: Colors.blue),
+            child: p.imagePath != null
+                ? ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                    child: p.imagePath!.startsWith('http')
+                        ? Image.network(p.imagePath!, fit: BoxFit.cover)
+                        : Image.file(File(p.imagePath!), fit: BoxFit.cover),
+                  )
+                : Icon(getProductIcon(p.iconName), size: 50, color: Colors.blue),
           ),
           Padding(
             padding: const EdgeInsets.all(10),
@@ -595,8 +603,28 @@ class _OdayAppState extends State<OdayApp> {
                     TextField(controller: oldC, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'السعر القديم لو عليه خصم')),
                     DropdownButton<String>(value: cat, isExpanded: true, items: storeCategories.where((e) => e != 'الكل').map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(), onChanged: (v) => setD(() => cat = v!)),
                     CheckboxListTile(value: isOffer, title: const Text('عليه خصم؟'), onChanged: (v) => setD(() => isOffer = v!)),
-                    ElevatedButton.icon(onPressed: () async { final picker = ImagePicker(); final x = await picker.pickImage(source: ImageSource.gallery); if (x != null) setD(() => imgPath = x.path); }, icon: const Icon(Icons.image), label: Text(imgPath == null ? 'اختر صورة' : 'تم اختيار الصورة')),
-                    if (imgPath != null) Padding(padding: const EdgeInsets.only(top: 10), child: Image.file(File(imgPath!), height: 120)),
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final picker = ImagePicker();
+                        final x = await picker.pickImage(source: ImageSource.gallery);
+                        if (x != null) {
+                          final file = File(x.path);
+                          final ref = FirebaseStorage.instance.ref().child('products/${DateTime.now().millisecondsSinceEpoch}.jpg');
+                          await ref.putFile(file);
+                          final url = await ref.getDownloadURL();
+                          setD(() => imgPath = url);
+                        }
+                      },
+                      icon: const Icon(Icons.image),
+                      label: Text(imgPath == null ? 'اختر صورة' : 'تم اختيار الصورة'),
+                    ),
+                    if (imgPath != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: imgPath!.startsWith('http')
+                            ? Image.network(imgPath!, height: 120)
+                            : Image.file(File(imgPath!), height: 120),
+                      ),
                   ],
                 ),
               ),
