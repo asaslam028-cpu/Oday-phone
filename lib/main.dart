@@ -13,7 +13,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-} 
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,7 +31,7 @@ void main() async {
 
 const String vodafoneNumber = '01015519180';
 const String instapayNumber = '01069068091';
-const String adminPassword = '2911';
+const String adminPassword = '291191';
 const Color navyBg = Color(0xFF0A1931);
 const Color navyCard = Color(0xFF13294B);
 const Color navyDark = Color(0xFF071224);
@@ -157,6 +157,14 @@ class _OdayHomeState extends State<OdayHome> {
   String searchText = '';
   String storeCategory = 'الكل';
   int logoTaps = 0;
+  // === الإضافة الجديدة - البانر فقط ===
+  int heroIndex = 0;
+  List<Map<String, String>> heroOffers = [
+    {'title': 'خصم 30% النهارده بس 🔥', 'sub': 'على كل الجرابات والشواحن - التوصيل مجاني في الإسماعيلية'},
+    {'title': 'صيانة من البيت 📱', 'sub': 'مندوب ياخد تليفونك ويرجعهولك متصلح لحد البيت'},
+    {'title': 'كاش باك 10% 💰', 'sub': 'على أول طلب ليك من المتجر'},
+  ];
+  // === نهاية الإضافة ===
   List<OrderItem> cart = [];
   List<AppOrder> orders = [];
   List<RepairRequest> repairs = [];
@@ -439,6 +447,72 @@ class _OdayHomeState extends State<OdayHome> {
     return _buildHome();
   }
 
+  // === الإضافة الجديدة - البانر والشريط ===
+  Widget _buildHeroBanner() {
+    return Column(
+      children: [
+        Container(
+          height: 170,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: const LinearGradient(colors: [Color(0xFF1E3A5F), accentOrange]),
+          ),
+          child: PageView.builder(
+            itemCount: heroOffers.length,
+            onPageChanged: (i) => setState(() => heroIndex = i),
+            itemBuilder: (ctx, i) {
+              return Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(heroOffers[i]['title']!, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Text(heroOffers[i]['sub']!, style: const TextStyle(color: Colors.white, fontSize: 14)),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                      onPressed: () => setState(() => currentIndex = 1),
+                      child: const Text('اطلب دلوقتي', style: TextStyle(color: accentOrange, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(heroOffers.length, (i) => Container(
+            margin: const EdgeInsets.symmetric(horizontal: 3),
+            width: heroIndex == i ? 20 : 8,
+            height: 8,
+            decoration: BoxDecoration(color: heroIndex == i ? accentOrange : Colors.white30, borderRadius: BorderRadius.circular(10)),
+          )),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTicker() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+      decoration: BoxDecoration(color: accentOrange.withOpacity(0.15), borderRadius: BorderRadius.circular(12), border: Border.all(color: accentOrange.withOpacity(0.4))),
+      child: const Row(
+        children: [
+          Icon(Icons.local_fire_department, color: accentOrange, size: 20),
+          SizedBox(width: 8),
+          Expanded(child: Text('التوصيل مجاني النهارده في الإسماعيلية • صيانة من البيت • كاش باك 10%', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold))),
+        ],
+      ),
+    );
+  }
+  // === نهاية الإضافة ===
+
   Widget _buildHome() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -448,6 +522,12 @@ class _OdayHomeState extends State<OdayHome> {
           const Text('مرحبا بكم في عدي فون', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
           const SizedBox(height: 12),
           TextField(onChanged: (v) => setState(() => searchText = v), style: const TextStyle(color: Colors.white), decoration: InputDecoration(hintText: 'دور على جراب، شاحن، سماعة، سكرينة...', prefixIcon: const Icon(Icons.search, color: Colors.white70), filled: true, fillColor: navyCard, border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none))),
+          const SizedBox(height: 16),
+          // === الإضافة هنا بس ===
+          _buildHeroBanner(),
+          const SizedBox(height: 12),
+          _buildTicker(),
+          // === نهاية الإضافة ===
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
@@ -685,7 +765,7 @@ class _OdayHomeState extends State<OdayHome> {
         const SizedBox(height: 20),
         const Text('طلبات المندوب والخدمات', style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: Colors.white)),
         const SizedBox(height: 10),
-        ...repairs.map((r) => Card(color: navyCard, child: ListTile(title: Text('${r.kind} - ${r.customerName}', style: const TextStyle(color: Colors.white)), subtitle: Text('${r.problem} - ${r.status}', style: const TextStyle(color: Colors.white70)), trailing: Text(r.date, style: const TextStyle(color: Colors.white))))).toList(),
+        ...repairs.map((r) => Card(color: navyCard, child: ListTile(title: Text('${r.kind} - ${r.customerName}', style: TextStyle(color: Colors.white)), subtitle: Text('${r.problem} - ${r.status}', style: TextStyle(color: Colors.white70)), trailing: Text(r.date, style: TextStyle(color: Colors.white))))).toList(),
       ],
     );
   }
