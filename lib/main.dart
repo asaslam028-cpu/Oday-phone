@@ -6,7 +6,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -51,14 +50,12 @@ class AppOrder {
   String id; String customerName; String phone; String address; String paymentMethod; String status; List<OrderItem> items; double total; String? proofPath; String date;
   AppOrder({required this.id, required this.customerName, required this.phone, required this.address, required this.paymentMethod, required this.status, required this.items, required this.total, this.proofPath, required this.date});
   Map<String, dynamic> toJson() => {'id': id, 'customerName': customerName, 'phone': phone, 'address': address, 'paymentMethod': paymentMethod, 'status': status, 'items': items.map((e) => e.toJson()).toList(), 'total': total, 'proofPath': proofPath, 'date': date};
-  factory AppOrder.fromJson(Map<String, dynamic> j) => AppOrder(id: j['id'], customerName: j['customerName'], phone: j['phone'], address: j['address'], paymentMethod: j['paymentMethod'], status: j['status'], items: (j['items'] as List).map((e) => OrderItem.fromJson(e)).toList(), total: (j['total'] as num).toDouble(), proofPath: j['proofPath'], date: j['date']);
 }
 
 class RepairRequest {
   String id; String customerName; String phone; String address; String phoneType; String problem; String kind; String date; String status;
   RepairRequest({required this.id, required this.customerName, required this.phone, required this.address, required this.phoneType, required this.problem, required this.kind, required this.date, this.status = 'جديد'});
   Map<String, dynamic> toJson() => {'id': id, 'customerName': customerName, 'phone': phone, 'address': address, 'phoneType': phoneType, 'problem': problem, 'kind': kind, 'date': date, 'status': status};
-  factory RepairRequest.fromJson(Map<String, dynamic> j) => RepairRequest(id: j['id'], customerName: j['customerName'], phone: j['phone'], address: j['address'], phoneType: j['phoneType'] ?? '', problem: j['problem'], kind: j['kind'] ?? 'مندوب صيانة موبايل', date: j['date'], status: j['status'] ?? 'جديد');
 }
 
 class OdayApp extends StatefulWidget {
@@ -88,7 +85,7 @@ class _OdayAppState extends State<OdayApp> {
   @override
   void initState() {
     super.initState();
-    _loadAll();
+    _loadLocal();
     _loadProductsFromFirebase();
   }
 
@@ -99,19 +96,19 @@ class _OdayAppState extends State<OdayApp> {
         setState(() {
           products = snap.docs.map((d) => Product.fromJson(d.data())).toList();
         });
-        _saveAll();
+        _saveLocal();
       }
     } catch (e) {
-      debugPrint('Products firebase error: $e');
+      debugPrint('Products error: $e');
     }
   }
 
-  Future<void> _loadAll() async {
+  Future<void> _loadLocal() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      final pStr = prefs.getString('products');
-      if (pStr != null) {
-        products = (jsonDecode(pStr) as List).map((e) => Product.fromJson(e)).toList();
+      final cStr = prefs.getString('cart');
+      if (cStr != null) {
+        cart = (jsonDecode(cStr) as List).map((e) => OrderItem.fromJson(e)).toList();
       }
       final oStr = prefs.getString('orders');
       if (oStr != null) {
@@ -121,26 +118,21 @@ class _OdayAppState extends State<OdayApp> {
       if (rStr != null) {
         repairs = (jsonDecode(rStr) as List).map((e) => RepairRequest.fromJson(e)).toList();
       }
-      final cStr = prefs.getString('cart');
-      if (cStr != null) {
-        cart = (jsonDecode(cStr) as List).map((e) => OrderItem.fromJson(e)).toList();
-      }
     });
   }
 
-  Future<void> _saveAll() async {
+  Future<void> _saveLocal() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('products', jsonEncode(products.map((e) => e.toJson()).toList()));
+    await prefs.setString('cart', jsonEncode(cart.map((e) => e.toJson()).toList()));
     await prefs.setString('orders', jsonEncode(orders.map((e) => e.toJson()).toList()));
     await prefs.setString('repairs', jsonEncode(repairs.map((e) => e.toJson()).toList()));
-    await prefs.setString('cart', jsonEncode(cart.map((e) => e.toJson()).toList()));
   }
 
   Future<void> _saveOrderToFirebase(AppOrder o) async {
     try {
       await FirebaseFirestore.instance.collection('orders').add(o.toJson());
     } catch (e) {
-      debugPrint('Firebase order error: $e');
+      debugPrint('Order firebase error: $e');
     }
   }
 
@@ -148,11 +140,12 @@ class _OdayAppState extends State<OdayApp> {
     try {
       await FirebaseFirestore.instance.collection('repairs').add(r.toJson());
     } catch (e) {
-      debugPrint('Firebase repair error: $e');
+      debugPrint('Repair firebase error: $e');
     }
   }
 
   double get cartTotal => cart.fold(0, (sum, e) => sum + e.price * e.qty);
+
   List<Product> get filteredStore {
     return products.where((p) {
       final matchSearch = searchText.isEmpty || p.name.contains(searchText) || p.desc.contains(searchText);
@@ -160,6 +153,7 @@ class _OdayAppState extends State<OdayApp> {
       return matchSearch && matchCat;
     }).toList();
   }
+
   List<Product> get offers => products.where((p) => p.isOffer).toList();
 
   void _addToCart(Product p) {
@@ -171,22 +165,21 @@ class _OdayAppState extends State<OdayApp> {
         cart.add(OrderItem(name: p.name, qty: 1, price: p.price));
       }
     });
-    _saveAll();
+    _saveLocal();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('تم اضافته الى السلة - ${p.name}'), backgroundColor: accentGreen, duration: const Duration(seconds: 1)),
     );
   }
 
   void _openRepairPage(String kind) {
-    Navigator.push(
-      context,
+    Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(
         builder: (ctx) => RepairPage(
           kind: kind,
           onSubmit: (r) async {
             setState(() {
               repairs.add(r);
-              _saveAll();
+              _saveLocal();
             });
             await _saveRepairToFirebase(r);
           },
@@ -200,11 +193,9 @@ class _OdayAppState extends State<OdayApp> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.orange,
         scaffoldBackgroundColor: navyBg,
         appBarTheme: const AppBarTheme(backgroundColor: navyDark, foregroundColor: Colors.white),
         bottomNavigationBarTheme: const BottomNavigationBarThemeData(backgroundColor: navyDark, selectedItemColor: accentOrange, unselectedItemColor: Colors.grey),
-        textTheme: const TextTheme(bodyMedium: TextStyle(color: Colors.white), bodyLarge: TextStyle(color: Colors.white), titleMedium: TextStyle(color: Colors.white)),
         inputDecorationTheme: InputDecorationTheme(filled: true, fillColor: navyCard, labelStyle: const TextStyle(color: Colors.white70), hintStyle: const TextStyle(color: Colors.white54), border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)), enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Colors.white24))),
       ),
       home: showStart ? _buildStartPage() : _buildMainPage(),
@@ -418,7 +409,7 @@ class _OdayAppState extends State<OdayApp> {
           ),
           Padding(
             padding: const EdgeInsets.all(10),
-            child: Row(children: [Expanded(child: SizedBox(height: 44, child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: accentOrange, padding: const EdgeInsets.symmetric(vertical: 10), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))), onPressed: () => _addToCart(p), child: const Text('اضافة +', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold))))), IconButton(onPressed: () { setState(() { p.isFav = !p.isFav; _saveAll(); }); }, icon: Icon(p.isFav ? Icons.favorite : Icons.favorite_border, color: Colors.red))]),
+            child: Row(children: [Expanded(child: SizedBox(height: 44, child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: accentOrange, padding: const EdgeInsets.symmetric(vertical: 10), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))), onPressed: () => _addToCart(p), child: const Text('اضافة +', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold))))), IconButton(onPressed: () { setState(() { p.isFav = !p.isFav; }); }, icon: Icon(p.isFav ? Icons.favorite : Icons.favorite_border, color: Colors.red))]),
           ),
         ],
       ),
@@ -436,7 +427,7 @@ class _OdayAppState extends State<OdayApp> {
           ...cart.asMap().entries.map((entry) {
             final idx = entry.key;
             final item = entry.value;
-            return Card(color: navyCard, child: ListTile(title: Text(item.name, style: const TextStyle(color: Colors.white)), subtitle: Text('${item.price} ج', style: const TextStyle(color: Colors.white70)), trailing: Row(mainAxisSize: MainAxisSize.min, children: [IconButton(icon: const Icon(Icons.remove, color: Colors.white), onPressed: () { setState(() { if (item.qty > 1) { item.qty = item.qty - 1; } else { cart.removeAt(idx); } _saveAll(); }); }), Text('${item.qty}', style: const TextStyle(color: Colors.white)), IconButton(icon: const Icon(Icons.add, color: Colors.white), onPressed: () { setState(() { item.qty = item.qty + 1; _saveAll(); }); }), IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () { setState(() { cart.removeAt(idx); _saveAll(); }); })])));
+            return Card(color: navyCard, child: ListTile(title: Text(item.name, style: const TextStyle(color: Colors.white)), subtitle: Text('${item.price} ج', style: const TextStyle(color: Colors.white70)), trailing: Row(mainAxisSize: MainAxisSize.min, children: [IconButton(icon: const Icon(Icons.remove, color: Colors.white), onPressed: () { setState(() { if (item.qty > 1) { item.qty = item.qty - 1; } else { cart.removeAt(idx); } _saveLocal(); }); }), Text('${item.qty}', style: const TextStyle(color: Colors.white)), IconButton(icon: const Icon(Icons.add, color: Colors.white), onPressed: () { setState(() { item.qty = item.qty + 1; _saveLocal(); }); }), IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () { setState(() { cart.removeAt(idx); _saveLocal(); }); })])));
           }).toList(),
           const SizedBox(height: 10),
           Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: navyCard, borderRadius: BorderRadius.circular(14)), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('الاجمالي', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.white)), Text('$cartTotal ج', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: accentOrange))])),
@@ -495,7 +486,7 @@ class _OdayAppState extends State<OdayApp> {
                     setState(() {
                       orders.add(newOrder);
                       cart.clear();
-                      _saveAll();
+                      _saveLocal();
                       currentIndex = 3;
                     });
                     await _saveOrderToFirebase(newOrder);
