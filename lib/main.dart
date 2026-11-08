@@ -319,7 +319,7 @@ class _OdayHomeState extends State<OdayHome> {
       final vStr = prefs.getString('heroVideoUrl');
       if (vStr != null && vStr.isNotEmpty) {
         heroVideoUrl = vStr;
-        myPhone = prefs.getString('myPhone')
+        myPhone = prefs.getString('myPhone');
       }
       // === نهاية الإضافة ===
     });
