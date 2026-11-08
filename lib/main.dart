@@ -185,6 +185,7 @@ class _OdayHomeState extends State<OdayHome> {
   String storeCategory = 'الكل';
   int logoTaps = 0;
   // === الإضافة الجديدة - البانر 5 صور + الشريط + الفيديو ===
+  String? myPhone;
   int heroIndex = 0;
   PageController _heroController = PageController();
   Timer? _heroTimer;
@@ -311,6 +312,7 @@ class _OdayHomeState extends State<OdayHome> {
       final vStr = prefs.getString('heroVideoUrl');
       if (vStr != null && vStr.isNotEmpty) {
         heroVideoUrl = vStr;
+        myPhone = prefs.getString('myPhone')
       }
       // === نهاية الإضافة ===
     });
@@ -331,16 +333,20 @@ class _OdayHomeState extends State<OdayHome> {
     await prefs.setString('heroImages', jsonEncode(heroImages));
     await prefs.setString('tickerText', tickerText);
     await prefs.setString('heroVideoUrl', heroVideoUrl);
+    await prefs.setString('myPhone', myPhone ?? '');
     // === نهاية الإضافة ===
   }
 
-  Future<void> _saveOrderToFirebase(AppOrder o) async {
-    try {
-      await FirebaseFirestore.instance.collection('orders').add(o.toJson());
-    } catch (e) {
-      debugPrint('Order firebase error: $e');
-    }
+Future<void> _saveOrderToFirebase(AppOrder o) async {
+  try {
+    final data = o.toJson();
+    data['phoneNorm'] = normalizePhone(o.phone);
+    data['time'] = FieldValue.serverTimestamp();
+    await FirebaseFirestore.instance.collection('orders').add(data);
+  } catch (e) {
+    debugPrint('Order firebase error: $e');
   }
+}
 
   Future<void> _saveRepairToFirebase(RepairRequest r) async {
     try {
@@ -977,15 +983,14 @@ class _OdayHomeState extends State<OdayHome> {
                     }
                     setLocal(() => isUploading = false);
                     final newOrder = AppOrder(id: DateTime.now().millisecondsSinceEpoch.toString(), customerName: nameC.text, phone: phoneC.text, address: addrC.text, paymentMethod: method, status: 'جديد', items: List.from(cart), total: cartTotal, proofPath: finalProof, date: DateTime.now().toString().substring(0, 10));
-                    setState(() {
-                      orders.add(newOrder);
-                      cart.clear();
-                      _saveAll();
-                      currentIndex = 3;
-                    });
-                    await _saveOrderToFirebase(newOrder);
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم استلام طلبك وهنكلمك')));
-                  },
+            myPhone = phoneC.text.trim();
+            setState(() {
+             orders.add(newOrder);
+             cart.clear();
+             _saveAll();
+             currentIndex = 3;
+});
+await _saveOrderToFirebase(newOrder);
                   child: isUploading ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white)) : const Text('تأكيد الطلب', style: TextStyle(color: Colors.white, fontSize: 17)),
                 ),
               ),
@@ -997,30 +1002,42 @@ class _OdayHomeState extends State<OdayHome> {
   }
 
   Widget _buildMyOrders() {
-  return StreamBuilder<QuerySnapshot>(
-    stream: FirebaseFirestore.instance.collection('orders').orderBy('time', descending: true).snapshots(),
-    builder: (context, snap) {
-      if (!snap.hasData) return const Center(child: CircularProgressIndicator());
-      if (snap.data!.docs.isEmpty) {
-        return const Center(child: Text('لا يوجد طلبات بعد', style: TextStyle(color: Colors.white)));
-      }
-      return ListView(
-        padding: const EdgeInsets.all(16),
-        children: snap.data!.docs.map((d) {
-          final data = d.data() as Map<String, dynamic>;
-          return Card(
-            color: navyCard,
-            child: ListTile(
-              title: Text('${data['type'] ?? ''} - ${data['name'] ?? ''}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              subtitle: Text('📞 ${data['phone'] ?? ''}\n📍 ${data['address'] ?? ''}\n📝 ${data['details'] ?? ''}\nالحالة: ${data['status'] ?? ''}', style: const TextStyle(color: Colors.white70)),
-              isThreeLine: true,
-            ),
-          );
-        }).toList(),
-      );
-    },
+  if (myPhone == null || myPhone!.isEmpty) {
+    final c = TextEditingController();
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('اكتب رقمك عشان تشوف طلباتك', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            TextField(controller: c, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'رقم الموبايل')),
+            const SizedBox(height: 16),
+            SizedBox(width: double.infinity, child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: accentOrange), onPressed: () async { if (c.text.trim().isEmpty) return; myPhone = c.text.trim(); await _saveAll(); setState(() {}); }, child: const Text('عرض طلباتي', style: TextStyle(color: Colors.white)))),
+          ],
+        ),
+      ),
+    );
+  }
+  final myNorm = normalizePhone(myPhone!);
+  return Column(
+    children: [
+      Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 0), child: Row(children: [Expanded(child: Text('طلباتي - $myPhone', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))), TextButton(onPressed: () async { myPhone = null; await _saveAll(); setState(() {}); }, child: const Text('تغيير الرقم', style: TextStyle(color: accentOrange)))])),
+      Expanded(
+        child: StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance.collection('orders').orderBy('time', descending: true).snapshots(),
+          builder: (context, snap) {
+            if (snap.hasError) return Center(child: Text('خطأ: ${snap.error}', style: const TextStyle(color: Colors.white)));
+            if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+            final docs = snap.data!.docs.where((d) { final data = d.data() as Map<String, dynamic>; final pn = (data['phoneNorm'] ?? normalizePhone('${data['phone'] ?? ''}')).toString(); return pn == myNorm; }).toList();
+            if (docs.isEmpty) return const Center(child: Text('لا يوجد طلبات بعد', style: const TextStyle(color: Colors.white)));
+            return ListView(padding: const EdgeInsets.all(16), children: docs.map((d) { final data = d.data() as Map<String, dynamic>; final items = (data['items'] as List? ?? []).map((e) => '${e['name'] ?? ''} x${e['qty'] ?? ''}').join(', '); return Card(color: navyCard, child: ListTile(title: Text('${data['customerName'] ?? ''} - ${data['phone'] ?? ''}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), subtitle: Text('📍 ${data['address'] ?? ''}\n🛒 $items\nالاجمالي: ${data['total'] ?? ''} ج - ${data['paymentMethod'] ?? ''}\nالحالة: ${data['status'] ?? 'جديد'}', style: const TextStyle(color: Colors.white70)), isThreeLine: true)); }).toList());
+          },
+        ),
+      ),
+    ],
   );
-}
 }
 
 class RepairPage extends StatefulWidget {
@@ -1441,55 +1458,57 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Widget _ordersTab() {
-    if (widget.orders.isEmpty) return const Center(child: Text('مفيش طلبات', style: TextStyle(color: Colors.white)));
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: widget.orders.length,
-      itemBuilder: (ctx, i) {
-        final o = widget.orders[i];
-        return Card(
-          color: navyCard,
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('${o.customerName} - ${o.phone}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                Text('${o.address} - ${o.date}', style: const TextStyle(color: Colors.white70)),
-                Text('${o.items.map((e) => '${e.name} x${e.qty}').join(', ')}', style: const TextStyle(color: Colors.white70)),
-                Text('الاجمالي: ${o.total} ج - ${o.paymentMethod}', style: const TextStyle(color: accentOrange)),
-                if (o.proofPath != null) Padding(padding: const EdgeInsets.only(top: 10), child: buildImageWidget(o.proofPath, height: 120)),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButton<String>(
-                        value: o.status,
-                        dropdownColor: navyCard,
-                        style: const TextStyle(color: Colors.white),
-                        isExpanded: true,
-                        items: ['جديد', 'قيد التنفيذ', 'تم التوصيل', 'ملغي'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                        onChanged: (v) {
-                          if (v != null) {
-                            widget.onUpdateOrderStatus(i, v);
-                            setState(() {});
-                          }
-                        },
+  return StreamBuilder<QuerySnapshot>(
+    stream: FirebaseFirestore.instance.collection('orders').orderBy('time', descending: true).snapshots(),
+    builder: (context, snap) {
+      if (snap.hasError) return Center(child: Text('خطأ: ${snap.error}', style: const TextStyle(color: Colors.white)));
+      if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+      if (snap.data!.docs.isEmpty) return const Center(child: Text('مفيش طلبات', style: const TextStyle(color: Colors.white)));
+      return ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: snap.data!.docs.length,
+        itemBuilder: (ctx, i) {
+          final doc = snap.data!.docs[i];
+          final data = doc.data() as Map<String, dynamic>;
+          final o = AppOrder.fromJson(Map<String, dynamic>.from(data));
+          final status = (data['status'] ?? o.status).toString();
+          return Card(
+            color: navyCard,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('${o.customerName} - ${o.phone}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  Text('${o.address} - ${o.date}', style: const TextStyle(color: Colors.white70)),
+                  Text(o.items.map((e) => '${e.name} x${e.qty}').join(', '), style: const TextStyle(color: Colors.white70)),
+                  Text('الاجمالي: ${o.total} ج - ${o.paymentMethod}', style: const TextStyle(color: accentOrange)),
+                  if (o.proofPath != null) Padding(padding: const EdgeInsets.only(top: 10), child: buildImageWidget(o.proofPath, height: 120)),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButton<String>(
+                          value: ['جديد', 'قيد التنفيذ', 'تم التوصيل', 'ملغي'].contains(status) ? status : 'جديد',
+                          dropdownColor: navyCard,
+                          style: const TextStyle(color: Colors.white),
+                          isExpanded: true,
+                          items: ['جديد', 'قيد التنفيذ', 'تم التوصيل', 'ملغي'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                          onChanged: (v) async { if (v != null) { await doc.reference.update({'status': v}); } },
+                        ),
                       ),
-                    ),
-                    IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () {
-                      widget.onDeleteOrder(i);
-                      setState(() {});
-                    }),
-                  ],
-                ),
-              ],
+                      IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () async { await doc.reference.delete(); }),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        );
-      },
-    );
-  }
+          );
+        },
+      );
+    },
+  );
+}
 
   Widget _repairsTab() {
     if (widget.repairs.isEmpty) return const Center(child: Text('مفيش خدمات', style: TextStyle(color: Colors.white)));
