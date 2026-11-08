@@ -1698,6 +1698,7 @@ Widget _productsTab() {
     },
   );
 }
+                  }
 
 class AdminProductForm extends StatefulWidget {
   final Product? existing;
