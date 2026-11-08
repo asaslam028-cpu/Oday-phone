@@ -494,6 +494,48 @@ onUpdateHeroVideo: (v) {
 },
                     ),
   ),
+                onAddProduct: (p) {
+  setState(() {
+    products.add(p);
+    _saveAll();
+  });
+},
+onUpdateProduct: (i, p) {
+  setState(() {
+    products[i] = p;
+    _saveAll();
+  });
+},
+onDeleteProduct: (i) {
+  setState(() {
+    products.removeAt(i);
+    _saveAll();
+  });
+},
+onUpdateOrderStatus: (i, s) {
+  setState(() {
+    orders[i].status = s;
+    _saveAll();
+  });
+},
+onDeleteOrder: (i) {
+  setState(() {
+    orders.removeAt(i);
+    _saveAll();
+  });
+},
+onUpdateRepairStatus: (i, s) {
+  setState(() {
+    repairs[i].status = s;
+    _saveAll();
+  });
+},
+onDeleteRepair: (i) {
+  setState(() {
+    repairs.removeAt(i);
+    _saveAll();
+  });
+},
 );
                       if (url.isEmpty) {
                         await _videoController?.pause();
