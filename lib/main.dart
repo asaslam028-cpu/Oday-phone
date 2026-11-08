@@ -998,6 +998,7 @@ Future<void> _saveOrderToFirebase(AppOrder o) async {
              currentIndex = 3;
 });
 await _saveOrderToFirebase(newOrder);
+                    },
                   child: isUploading ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white)) : const Text('تأكيد الطلب', style: TextStyle(color: Colors.white, fontSize: 17)),
                 ),
               ),
