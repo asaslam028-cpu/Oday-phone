@@ -225,6 +225,7 @@ class _OdayHomeState extends State<OdayHome> {
     super.initState();
     _loadAll();
     _loadProductsFromFirebase();
+    _listenSettings();
     // === الإضافة الجديدة - تشغيل التقليب التلقائي كل ثانيتين ===
     _heroTimer = Timer.periodic(
       const Duration(seconds: 2),
@@ -286,7 +287,32 @@ class _OdayHomeState extends State<OdayHome> {
     debugPrint('Products error: $e');
   });
 }
-
+void _listenSettings() {
+  FirebaseFirestore.instance
+      .collection('settings')
+      .doc('home')
+      .snapshots()
+      .listen((doc) {
+    if (!doc.exists) return;
+    if (!mounted) return;
+    final data = doc.data() as Map<String, dynamic>;
+    setState(() {
+      if (data['heroImages'] != null) {
+        heroImages = List<String>.from(data['heroImages']);
+      }
+      if (data['tickerText'] != null) {
+        tickerText = data['tickerText'].toString();
+      }
+      if (data['heroVideoUrl'] != null) {
+        final newVideo = data['heroVideoUrl'].toString();
+        if (newVideo != heroVideoUrl) {
+          heroVideoUrl = newVideo;
+          if (newVideo.isNotEmpty) _initVideo(newVideo);
+        }
+      }
+    });
+  });
+}
   Future<void> _loadAll() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
