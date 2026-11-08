@@ -223,7 +223,7 @@ class _OdayHomeState extends State<OdayHome> {
   @override
   void initState() {
     super.initState();
-    _loadAll();
+    _void_listen();
     _loadProductsFromFirebase();
     _listenSettings();
     // === الإضافة الجديدة - تشغيل التقليب التلقائي كل ثانيتين ===
@@ -278,11 +278,9 @@ class _OdayHomeState extends State<OdayHome> {
   Future<void> _loadProductsFromFirebase() async {
   FirebaseFirestore.instance.collection('products').snapshots().listen((snap) {
     if (!mounted) return;
-    if (snap.docs.isEmpty) return;
     setState(() {
       products = snap.docs.map((d) => Product.fromJson(d.data())).toList();
     });
-    _saveAll();
   }, onError: (e) {
     debugPrint('Products error: $e');
   });
@@ -332,21 +330,8 @@ void _listenSettings() {
       if (cStr != null) {
         cart = (jsonDecode(cStr) as List).map((e) => OrderItem.fromJson(Map<String, dynamic>.from(e))).toList();
       }
-      // === الإضافة الجديدة - تحميل صور البانر وكلام الشريط والفيديو ===
-      final hStr = prefs.getString('heroImages');
-      if (hStr != null && hStr.isNotEmpty) {
-        heroImages = List<String>.from(jsonDecode(hStr));
-      }
-      final tStr = prefs.getString('tickerText');
-      if (tStr != null && tStr.isNotEmpty) {
-        tickerText = tStr;
-      }
-      final vStr = prefs.getString('heroVideoUrl');
-      if (vStr != null && vStr.isNotEmpty) {
-        heroVideoUrl = vStr;
+      // === الإضافة الجديدة - تحميل صور البانر وكلام الشريط والفيديو ==
         myPhone = prefs.getString('myPhone');
-      }
-      // === نهاية الإضافة ===
     });
     // === الإضافة الجديدة - لو فيه فيديو محفوظ شغله ===
     if (heroVideoUrl.isNotEmpty) {
@@ -357,14 +342,8 @@ void _listenSettings() {
 
   Future<void> _saveAll() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('products', jsonEncode(products.map((e) => e.toJson()).toList()));
-    await prefs.setString('orders', jsonEncode(orders.map((e) => e.toJson()).toList()));
-    await prefs.setString('repairs', jsonEncode(repairs.map((e) => e.toJson()).toList()));
     await prefs.setString('cart', jsonEncode(cart.map((e) => e.toJson()).toList()));
     // === الإضافة الجديدة - حفظ صور البانر وكلام الشريط والفيديو ===
-    await prefs.setString('heroImages', jsonEncode(heroImages));
-    await prefs.setString('tickerText', tickerText);
-    await prefs.setString('heroVideoUrl', heroVideoUrl);
     await prefs.setString('myPhone', myPhone ?? '');
     // === نهاية الإضافة ===
   }
@@ -494,23 +473,16 @@ onUpdateHeroVideo: (v) {
 },
                     ),
   ),
-                onAddProduct: (p) {
-  setState(() {
-    products.add(p);
-    _saveAll();
-  });
+                onAddProduct: (p) async {
+  await FirebaseFirestore.instance.collection('products').add(p.toJson());
 },
-onUpdateProduct: (i, p) {
-  setState(() {
-    products[i] = p;
-    _saveAll();
-  });
+onUpdateProduct: (i, p) async {
+  await FirebaseFirestore.instance.collection('products').doc(p.id).update(p.toJson());
 },
-onDeleteProduct: (i) {
-  setState(() {
-    products.removeAt(i);
-    _saveAll();
-  });
+},
+onDeleteProduct: (id) async {
+  await FirebaseFirestore.instance.collection('products').doc(id).delete();
+},
 },
 onUpdateOrderStatus: (i, s) {
   setState(() {
