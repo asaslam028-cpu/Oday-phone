@@ -492,6 +492,9 @@ onUpdateHeroVideo: (v) {
     SetOptions(merge: true),
   );
 },
+                    ),
+  ),
+);
                       if (url.isEmpty) {
                         await _videoController?.pause();
                         await _videoController?.dispose();
@@ -1653,7 +1656,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       style: const TextStyle(color: Colors.white70)),
                   Text('📅 ${r.date}',
                       style: const TextStyle(color: Colors.white70)),
-                  const SizedBox(height: 😎,
+                  const SizedBox(height: 16,
                   Row(
                     children: [
                       DropdownButton<String>(
@@ -1695,8 +1698,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     },
   );
 }
-                  }
-
+                 
 class AdminProductForm extends StatefulWidget {
   final Product? existing;
   const AdminProductForm({super.key, this.existing});
