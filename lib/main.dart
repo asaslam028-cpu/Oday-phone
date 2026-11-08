@@ -40,7 +40,14 @@ const Color navyDark = Color(0xFF071224);
 const Color accentOrange = Color(0xFFFF7A00);
 const Color accentBlue = Color(0xFF38BDF6);
 const Color accentGreen = Color(0xFF22C55E);
-
+String normalizePhone(String p) {
+  String s = p.trim();
+  if (s.startsWith('+20')) s = s.substring(3);
+  else if (s.startsWith('0020')) s = s.substring(4);
+  else if (s.startsWith('20') && s.length == 12) s = s.substring(2);
+  if (s.startsWith('0')) s = s.substring(1);
+  return s;
+}
 Future<String?> uploadImageToStorage(File file, String folder) async {
   try {
     const String cloudName = 'eggmsevw';
