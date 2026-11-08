@@ -1431,42 +1431,87 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
   // === نهاية الإضافة ===
 
-  Widget _productsTab() {
-    if (widget.products.isEmpty) return const Center(child: Text('مفيش منتجات', style: TextStyle(color: Colors.white)));
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: widget.products.length,
-      itemBuilder: (ctx, i) {
-        final p = widget.products[i];
-        return Card(
-          color: navyCard,
-          child: ListTile(
-            leading: p.imagePath != null
-                ? ClipRRect(borderRadius: BorderRadius.circular(10), child: buildImageWidget(p.imagePath, width: 50, height: 50))
-                : Container(width: 50, height: 50, decoration: BoxDecoration(color: Colors.white12, borderRadius: BorderRadius.circular(10)), child: Icon(getProductIcon(p.iconName), color: accentBlue)),
-            title: Text(p.name, style: const TextStyle(color: Colors.white)),
-            subtitle: Text('${p.price} ج - ${p.category} - ${p.isOffer ? 'عرض' : 'عادي'}', style: const TextStyle(color: Colors.white70)),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(icon: const Icon(Icons.edit, color: Colors.white), onPressed: () async {
-                  final updated = await Navigator.of(context).push<Product>(MaterialPageRoute(builder: (ctx2) => AdminProductForm(existing: p)));
-                  if (updated != null) {
-                    widget.onUpdateProduct(i, updated);
-                    setState(() {});
-                  }
-                }),
-                IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () {
-                  widget.onDeleteProduct(i);
-                  setState(() {});
-                }),
-              ],
-            ),
-          ),
+  ستختفي الرسالة في غضون: 23h
+خلال 23h
+لقد أرسلت
+Widget _productsTab() {
+  return StreamBuilder<QuerySnapshot>(
+    stream: FirebaseFirestore.instance.collection('products').snapshots(),
+    builder: (context, snap) {
+      if (snap.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      if (!snap.hasData || snap.data!.docs.isEmpty) {
+        return const Center(
+          child: Text('مفيش منتجات',
+              style: TextStyle(color: Colors.white)),
         );
-      },
-    );
-  }
+      }
+      final docs = snap.data!.docs;
+      return ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: docs.length,
+        itemBuilder: (ctx, i) {
+          final doc = docs[i];
+          final data = doc.data() as Map<String, dynamic>;
+          final p = Product.fromJson(Map<String, dynamic>.from(data));
+          return Card(
+            color: navyCard,
+            child: ListTile(
+              leading: p.imagePath != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: buildImageWidget(p.imagePath,
+                          width: 50, height: 50))
+                  : Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                          color: Colors.white12,
+                          borderRadius: BorderRadius.circular(10)),
+                      child: Icon(getProductIcon(p.iconName),
+                          color: accentBlue)),
+              title: Text(p.name,
+                  style: const TextStyle(color: Colors.white)),
+              subtitle: Text(
+                  '${p.price} ج - ${p.category} - ${p.isOffer ? 'عرض' : 'عادي'}',
+                  style: const TextStyle(color: Colors.white70)),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.edit, color: Colors.white),
+                    onPressed: () async {
+                      final updated = await Navigator.of(context).push<Product>(
+                          MaterialPageRoute(
+                              builder: (ctx2) =>
+                                  AdminProductForm(existing: p)));
+                      if (updated != null) {
+                        await FirebaseFirestore.instance
+                            .collection('products')
+                            .doc(doc.id)
+                            .update(updated.toJson());
+                      }
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () async {
+                      await FirebaseFirestore.instance
+                          .collection('products')
+                          .doc(doc.id)
+                          .delete();
+                    },
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    },
+  );
+}
 
   Widget _ordersTab() {
   return StreamBuilder<QuerySnapshot>(
