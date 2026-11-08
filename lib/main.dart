@@ -437,89 +437,81 @@ await FirebaseFirestore.instance.collection('repairs').add(data);
                     products: products,
                     orders: orders,
                     repairs: repairs,
-                    // === الإضافة الجديدة - تمرير البانر والشريط والفيديو للأدمن ===
                     heroImages: heroImages,
                     tickerText: tickerText,
                     heroVideoUrl: heroVideoUrl,
                     onUpdateHeroImages: (imgs) {
-  setState(() {
-    heroImages = imgs;
-    _saveAll();
-  });
-  FirebaseFirestore.instance.collection('settings').doc('home').set(
-    {'heroImages': imgs},
-    SetOptions(merge: true),
-  );
-},
-onUpdateTicker: (t) {
-  setState(() {
-    tickerText = t;
-    _saveAll();
-  });
-  FirebaseFirestore.instance.collection('settings').doc('home').set(
-    {'tickerText': t},
-    SetOptions(merge: true),
-  );
-},
-onUpdateHeroVideo: (v) {
-  setState(() {
-    heroVideoUrl = v;
-    _saveAll();
-  });
-  FirebaseFirestore.instance.collection('settings').doc('home').set(
-    {'heroVideoUrl': v},
-    SetOptions(merge: true),
-  );
-},
-                    ),
-  ),
-                onAddProduct: (p) async {
-  await FirebaseFirestore.instance.collection('products').add(p.toJson());
-},
-onUpdateProduct: (i, p) async {
-  await FirebaseFirestore.instance.collection('products').doc(p.id).update(p.toJson());
-},
-},
-onDeleteProduct: (id) async {
-  await FirebaseFirestore.instance.collection('products').doc(id).delete();
-},
-},
-onUpdateOrderStatus: (i, s) {
-  setState(() {
-    orders[i].status = s;
-    _saveAll();
-  });
-},
-onDeleteOrder: (i) {
-  setState(() {
-    orders.removeAt(i);
-    _saveAll();
-  });
-},
-onUpdateRepairStatus: (i, s) {
-  setState(() {
-    repairs[i].status = s;
-    _saveAll();
-  });
-},
-onDeleteRepair: (i) {
-  setState(() {
-    repairs.removeAt(i);
-    _saveAll();
-  });
-},
-);
-                      if (url.isEmpty) {
-                        _videoController?.pause();
-                        _videoController?.dispose();
-                        _videoController = null;
-                        setState(() {});
-                      } else {
-                        _initVideo(url);
-                      }
+                      setState(() {
+                        heroImages = imgs;
+                        _saveAll();
+                      });
+                      FirebaseFirestore.instance.collection('settings').doc('home').set(
+                        {'heroImages': imgs},
+                        SetOptions(merge: true),
+                      );
                     },
-                    // === نهاية الإضافة ===
-                   
+                    onUpdateTicker: (t) {
+                      setState(() {
+                        tickerText = t;
+                        _saveAll();
+                      });
+                      FirebaseFirestore.instance.collection('settings').doc('home').set(
+                        {'tickerText': t},
+                        SetOptions(merge: true),
+                      );
+                    },
+                    onUpdateHeroVideo: (v) {
+                      setState(() {
+                        heroVideoUrl = v;
+                        _saveAll();
+                      });
+                      FirebaseFirestore.instance.collection('settings').doc('home').set(
+                        {'heroVideoUrl': v},
+                        SetOptions(merge: true),
+                      );
+                    },
+                    onAddProduct: (p) async {
+                      await FirebaseFirestore.instance.collection('products').add(p.toJson());
+                    },
+                    onUpdateProduct: (i, p) async {
+                      await FirebaseFirestore.instance.collection('products').doc(p.id).update(p.toJson());
+                    },
+                    onDeleteProduct: (id) async {
+                      await FirebaseFirestore.instance.collection('products').doc(id).delete();
+                    },
+                    onUpdateOrderStatus: (i, s) {
+                      setState(() {
+                        orders[i].status = s;
+                        _saveAll();
+                      });
+                    },
+                    onDeleteOrder: (i) {
+                      setState(() {
+                        orders.removeAt(i);
+                        _saveAll();
+                      });
+                    },
+                    onUpdateRepairStatus: (i, s) {
+                      setState(() {
+                        repairs[i].status = s;
+                        _saveAll();
+                      });
+                    },
+                    onDeleteRepair: (i) {
+                      setState(() {
+                        repairs.removeAt(i);
+                        _saveAll();
+                      });
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
