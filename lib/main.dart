@@ -1469,10 +1469,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
   // === نهاية الإضافة ===
 
-  ستختفي الرسالة في غضون: 23h
-خلال 23h
-لقد أرسلت
-Widget _productsTab() {
+ Widget _productsTab() {
   return StreamBuilder<QuerySnapshot>(
     stream: FirebaseFirestore.instance.collection('products').snapshots(),
     builder: (context, snap) {
