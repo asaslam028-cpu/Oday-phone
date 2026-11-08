@@ -462,24 +462,36 @@ await FirebaseFirestore.instance.collection('repairs').add(data);
                     heroImages: heroImages,
                     tickerText: tickerText,
                     heroVideoUrl: heroVideoUrl,
-                    onUpdateHeroImages: (list) {
-                      setState(() {
-                        heroImages = list;
-                        heroIndex = 0;
-                        _saveAll();
-                      });
-                    },
-                    onUpdateTicker: (txt) {
-                      setState(() {
-                        tickerText = txt;
-                        _saveAll();
-                      });
-                    },
-                    onUpdateHeroVideo: (url) async {
-                      setState(() {
-                        heroVideoUrl = url;
-                        _saveAll();
-                      });
+                    onUpdateHeroImages: (imgs) {
+  setState(() {
+    heroImages = imgs;
+    _saveAll();
+  });
+  FirebaseFirestore.instance.collection('settings').doc('home').set(
+    {'heroImages': imgs},
+    SetOptions(merge: true),
+  );
+},
+onUpdateTicker: (t) {
+  setState(() {
+    tickerText = t;
+    _saveAll();
+  });
+  FirebaseFirestore.instance.collection('settings').doc('home').set(
+    {'tickerText': t},
+    SetOptions(merge: true),
+  );
+},
+onUpdateHeroVideo: (v) {
+  setState(() {
+    heroVideoUrl = v;
+    _saveAll();
+  });
+  FirebaseFirestore.instance.collection('settings').doc('home').set(
+    {'heroVideoUrl': v},
+    SetOptions(merge: true),
+  );
+},
                       if (url.isEmpty) {
                         await _videoController?.pause();
                         await _videoController?.dispose();
