@@ -1091,7 +1091,6 @@ await _saveOrderToFirebase(newOrder);
   );
 }
 
-}
 class RepairPage extends StatefulWidget {
   final String kind;
   final Function(RepairRequest) onSubmit;
@@ -1656,7 +1655,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       style: const TextStyle(color: Colors.white70)),
                   Text('📅 ${r.date}',
                       style: const TextStyle(color: Colors.white70)),
-                  const SizedBox(height: 16,
+                  const SizedBox(height: 16),
                   Row(
                     children: [
                       DropdownButton<String>(
@@ -1698,7 +1697,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
     },
   );
 }
-                 
+                  }
+                  
 class AdminProductForm extends StatefulWidget {
   final Product? existing;
   const AdminProductForm({super.key, this.existing});
