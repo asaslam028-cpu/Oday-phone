@@ -275,18 +275,17 @@ class _OdayHomeState extends State<OdayHome> {
   // === نهاية الإضافة ===
 
   Future<void> _loadProductsFromFirebase() async {
-    try {
-      final snap = await FirebaseFirestore.instance.collection('products').get();
-      if (snap.docs.isNotEmpty) {
-        setState(() {
-          products = snap.docs.map((d) => Product.fromJson(d.data())).toList();
-        });
-        _saveAll();
-      }
-    } catch (e) {
-      debugPrint('Products error: $e');
-    }
-  }
+  FirebaseFirestore.instance.collection('products').snapshots().listen((snap) {
+    if (!mounted) return;
+    if (snap.docs.isEmpty) return;
+    setState(() {
+      products = snap.docs.map((d) => Product.fromJson(d.data())).toList();
+    });
+    _saveAll();
+  }, onError: (e) {
+    debugPrint('Products error: $e');
+  });
+}
 
   Future<void> _loadAll() async {
     final prefs = await SharedPreferences.getInstance();
