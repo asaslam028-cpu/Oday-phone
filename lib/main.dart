@@ -1520,54 +1520,98 @@ class _AdminDashboardState extends State<AdminDashboard> {
 }
 
   Widget _repairsTab() {
-    if (widget.repairs.isEmpty) return const Center(child: Text('مفيش خدمات', style: TextStyle(color: Colors.white)));
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: widget.repairs.length,
-      itemBuilder: (ctx, i) {
-        final r = widget.repairs[i];
-        return Card(
-          color: navyCard,
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('${r.kind} - ${r.customerName}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                Text('${r.phone} - ${r.address}', style: const TextStyle(color: Colors.white70)),
-                Text(r.problem, style: const TextStyle(color: Colors.white70)),
-                Text(r.date, style: const TextStyle(color: Colors.white70)),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButton<String>(
+  return StreamBuilder<QuerySnapshot>(
+    stream: FirebaseFirestore.instance
+        .collection('repairs')
+        .orderBy('time', descending: true)
+        .snapshots(),
+    builder: (context, snap) {
+      if (snap.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      if (!snap.hasData || snap.data!.docs.isEmpty) {
+        return const Center(
+          child: Text('لا توجد طلبات خدمات حالياً',
+              style: TextStyle(color: Colors.white70)),
+        );
+      }
+      final docs = snap.data!.docs;
+      return ListView.builder(
+        padding: const EdgeInsets.all(12),
+        itemCount: docs.length,
+        itemBuilder: (context, i) {
+          final doc = docs[i];
+          final data = doc.data() as Map<String, dynamic>;
+          final r = RepairRequest.fromJson(data);
+          return Card(
+            color: navyCard,
+            margin: const EdgeInsets.only(bottom: 12),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14)),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${r.kind} - ${r.customerName}',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 6),
+                  Text('📞 ${r.phone}',
+                      style: const TextStyle(color: Colors.white70)),
+                  Text('📍 ${r.address}',
+                      style: const TextStyle(color: Colors.white70)),
+                  Text('📱 ${r.phoneType}',
+                      style: const TextStyle(color: Colors.white70)),
+                  Text('🛠 ${r.problem}',
+                      style: const TextStyle(color: Colors.white70)),
+                  Text('📅 ${r.date}',
+                      style: const TextStyle(color: Colors.white70)),
+                  const SizedBox(height: 😎,
+                  Row(
+                    children: [
+                      DropdownButton<String>(
                         value: r.status,
                         dropdownColor: navyCard,
                         style: const TextStyle(color: Colors.white),
-                        isExpanded: true,
-                        items: ['جديد', 'قيد التنفيذ', 'تم', 'ملغي'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                        onChanged: (v) {
-                          if (v != null) {
-                            widget.onUpdateRepairStatus(i, v);
-                            setState(() {});
-                          }
+                        items: const [
+                          DropdownMenuItem(value: 'جديد', child: Text('جديد')),
+                          DropdownMenuItem(value: 'قيد التنفيذ', child: Text('قيد التنفيذ')),
+                          DropdownMenuItem(value: 'تم', child: Text('تم')),
+                          DropdownMenuItem(value: 'ملغي', child: Text('ملغي')),
+                        ],
+                        onChanged: (v) async {
+                          if (v == null) return;
+                          await FirebaseFirestore.instance
+                              .collection('repairs')
+                              .doc(doc.id)
+                              .update({'status': v});
                         },
                       ),
-                    ),
-                    IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () {
-                      widget.onDeleteRepair(i);
-                      setState(() {});
-                    }),
-                  ],
-                ),
-              ],
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.redAccent),
+                        onPressed: () async {
+                          await FirebaseFirestore.instance
+                              .collection('repairs')
+                              .doc(doc.id)
+                              .delete();
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        );
-      },
-    );
-  }
+          );
+        },
+      );
+    },
+  );
 }
 
 class AdminProductForm extends StatefulWidget {
