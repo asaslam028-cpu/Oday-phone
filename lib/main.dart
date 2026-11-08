@@ -543,62 +543,11 @@ onDeleteRepair: (i) {
                         _videoController = null;
                         setState(() {});
                       } else {
-                        await _initVideo(url);
+                        _initVideo(url);
                       }
                     },
                     // === نهاية الإضافة ===
-                    onAddProduct: (p) {
-                      setState(() {
-                        products.add(p);
-                        _saveAll();
-                      });
-                      _saveProductToFirebase(p);
-                    },
-                    onUpdateProduct: (index, p) {
-                      setState(() {
-                        products[index] = p;
-                        _saveAll();
-                      });
-                    },
-                    onDeleteProduct: (index) {
-                      setState(() {
-                        products.removeAt(index);
-                        _saveAll();
-                      });
-                    },
-                    onUpdateOrderStatus: (index, status) {
-                      setState(() {
-                        orders[index].status = status;
-                        _saveAll();
-                      });
-                    },
-                    onDeleteOrder: (index) {
-                      setState(() {
-                        orders.removeAt(index);
-                        _saveAll();
-                      });
-                    },
-                    onUpdateRepairStatus: (index, status) {
-                      setState(() {
-                        repairs[index].status = status;
-                        _saveAll();
-                      });
-                    },
-                    onDeleteRepair: (index) {
-                      setState(() {
-                        repairs.removeAt(index);
-                        _saveAll();
-                      });
-                    },
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      );
-    }
-  }
+                   
 
   @override
   Widget build(BuildContext context) {
