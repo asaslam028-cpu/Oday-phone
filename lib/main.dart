@@ -538,8 +538,8 @@ onDeleteRepair: (i) {
 },
 );
                       if (url.isEmpty) {
-                        await _videoController?.pause();
-                        await _videoController?.dispose();
+                        _videoController?.pause();
+                        _videoController?.dispose();
                         _videoController = null;
                         setState(() {});
                       } else {
