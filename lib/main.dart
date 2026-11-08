@@ -1045,7 +1045,7 @@ await _saveOrderToFirebase(newOrder);
     ],
   );
 }
-
+}
 class RepairPage extends StatefulWidget {
   final String kind;
   final Function(RepairRequest) onSubmit;
