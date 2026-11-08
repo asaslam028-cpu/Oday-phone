@@ -357,7 +357,10 @@ Future<void> _saveOrderToFirebase(AppOrder o) async {
 
   Future<void> _saveRepairToFirebase(RepairRequest r) async {
     try {
-      await FirebaseFirestore.instance.collection('repairs').add(r.toJson());
+      final data = r.toJson();
+data['time'] = FieldValue.serverTimestamp();
+data['phoneNorm'] = normalizePhone(r.phone);
+await FirebaseFirestore.instance.collection('repairs').add(data);
     } catch (e) {
       debugPrint('Repair firebase error: $e');
     }
