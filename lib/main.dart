@@ -118,6 +118,7 @@ IconData getProductIcon(String name) {
   if (name == 'cable') return Icons.cable;
   return Icons.phone_android;
 }
+} 
 
 class OrderItem {
   String name; int qty; double price;
