@@ -107,7 +107,6 @@ Widget buildImageWidget(String? path, {double? height, double? width, BoxFit fit
 }
 
 class Product {
-}
 
   String? id; String name; String desc; double price; double oldPrice; String category; bool isOffer; bool isFav; String? imagePath; String? iconName;
 Product({this.id, required this.name, required this.desc, required this.price, this.oldPrice = 0, required this.category, this.isOffer = false, this.isFav = false, this.imagePath, this.iconName});
