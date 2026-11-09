@@ -1461,6 +1461,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       decoration: BoxDecoration(
                           color: Colors.white12,
                           borderRadius: BorderRadius.circular(10)),
+                    ),
                       child: Icon(getProductIcon(p.iconName ?? "phone"),
                           color: accentBlue)),
               ),
