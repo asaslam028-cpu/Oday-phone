@@ -119,6 +119,8 @@ staticIconData getProductIcon(String name) {
 }  
 
 } 
+IconData getProductIcon(String name) => Product.getProductIcon(name);
+
 class OrderItem {
   String name; int qty; double price;
   OrderItem({required this.name, required this.qty, required this.price});
