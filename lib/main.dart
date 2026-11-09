@@ -273,7 +273,11 @@ class _OdayHomeState extends State<OdayHome> {
   FirebaseFirestore.instance.collection('products').snapshots().listen((snap) {
     if (!mounted) return;
     setState(() {
-      products = snap.docs.map((d) => Product.fromJson(d.data())).toList();
+   products = snap.docs.map((d) {
+  final p = Product.fromJson(d.data());
+  p.id = d.id;
+  return p;
+}).toList();
     });
   }, onError: (e) {
     debugPrint('Products error: $e');
@@ -464,15 +468,21 @@ await FirebaseFirestore.instance.collection('repairs').add(data);
                         SetOptions(merge: true),
                       );
                     },
-                    onAddProduct: (p) async {
-                      await FirebaseFirestore.instance.collection('products').add(p.toJson());
-                    },
-                    onUpdateProduct: (i, p) async {
-                      await FirebaseFirestore.instance.collection('products').doc(p.id).update(p.toJson());
-                    },
-                    onDeleteProduct: (id) async {
-                      await FirebaseFirestore.instance.collection('products').doc(id.toString()).delete();
-                    },
+                   onAddProduct: (p) async {
+  final ref = await FirebaseFirestore.instance.collection('products').add(p.toJson());
+  p.id = ref.id;
+  setState(() { products.add(p); });
+},
+onUpdateProduct: (i, p) async {
+  if (p.id != null) {
+    await FirebaseFirestore.instance.collection('products').doc(p.id).update(p.toJson());
+  }
+  setState(() { products[i] = p; });
+},
+onDeleteProduct: (id) async {
+  await FirebaseFirestore.instance.collection('products').doc(id.toString()).delete();
+  setState(() { products.removeWhere((x) => x.id == id); });
+},
                     onUpdateOrderStatus: (i, s) {
                       setState(() {
                         orders[i].status = s;
