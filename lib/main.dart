@@ -117,9 +117,9 @@ IconData getProductIcon(String name) {
   if (name == 'head') return Icons.headphones;
   if (name == 'cable') return Icons.cable;
   return Icons.phone_android;
-}
-} 
+}  
 
+} 
 class OrderItem {
   String name; int qty; double price;
   OrderItem({required this.name, required this.qty, required this.price});
