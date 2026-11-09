@@ -890,7 +890,7 @@ await FirebaseFirestore.instance.collection('repairs').add(data);
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
                     child: buildImageWidget(p.imagePath, height: 140, width: double.infinity),
                   )
-                : Icon(getProductIcon(p.iconName??"), size: 50, color: accentBlue),
+                : Icon(getProductIcon(p.iconName ?? "phone"), size: 50, color: accentBlue),
           ),
           Padding(
             padding: const EdgeInsets.all(10),
