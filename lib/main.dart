@@ -477,7 +477,7 @@ await FirebaseFirestore.instance.collection('repairs').add(data);
                       await FirebaseFirestore.instance.collection('products').doc(p.id).update(p.toJson());
                     },
                     onDeleteProduct: (id) async {
-                      await FirebaseFirestore.instance.collection('products').doc(id.toString).delete();
+                      await FirebaseFirestore.instance.collection('products').doc(id.toString()).delete();
                     },
                     onUpdateOrderStatus: (i, s) {
                       setState(() {
