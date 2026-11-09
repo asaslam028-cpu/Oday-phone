@@ -211,14 +211,8 @@ class _OdayHomeState extends State<OdayHome> {
   List<OrderItem> cart = [];
   List<AppOrder> orders = [];
   List<RepairRequest> repairs = [];
-  List<Product> products = [
-    Product(name: 'جراب موبايل', desc: 'جراب حماية خامة نضيفة', price: 150, oldPrice: 200, category: 'جرابات', isOffer: true, iconName: 'phone'),
-    Product(name: 'شاحن سريع', desc: 'شاحن سريع اصلي', price: 350, oldPrice: 450, category: 'شواحن', isOffer: true, iconName: 'charge'),
-    Product(name: 'سماعة بلوتوث', desc: 'سماعة صوت نقي', price: 600, category: 'سماعات', iconName: 'head'),
-    Product(name: 'سكرينة حماية', desc: 'سكرينة ضد الكسر', price: 100, category: 'سكرينات', iconName: 'phone'),
-    Product(name: 'وصلة شاحن', desc: 'وصلة شحن سريع', price: 120, category: 'شواحن', iconName: 'cable'),
-    Product(name: 'حامل موبايل', desc: 'حامل للعربية والمكتب', price: 200, category: 'اكسسوارات', iconName: 'phone'),
-  ];
+  List<Product> products = [];
+    
   List<String> storeCategories = ['الكل', 'جرابات', 'شواحن', 'سماعات', 'سكرينات', 'اكسسوارات'];
 
   @override
