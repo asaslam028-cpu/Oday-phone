@@ -107,12 +107,12 @@ Widget buildImageWidget(String? path, {double? height, double? width, BoxFit fit
 }
 
 class Product {
-
+IconData getProductIcon(String name) => Product.getProductIcon(name);
   String? id; String name; String desc; double price; double oldPrice; String category; bool isOffer; bool isFav; String? imagePath; String? iconName;
 Product({this.id, required this.name, required this.desc, required this.price, this.oldPrice = 0, required this.category, this.isOffer = false, this.isFav = false, this.imagePath, this.iconName});
 Map<String, dynamic> toJson() => {"id": id, "name": name, "desc": desc, "price": price, "oldPrice": oldPrice, "category": category, "isOffer": isOffer, "isFav": isFav, "imagePath": imagePath, "iconName": iconName};
 factory Product.fromJson(Map<String, dynamic> j) => Product(id: j['id'], name: j['name'] ?? '', desc: j['desc'] ?? '', price: (j['price'] as num? ?? 0).toDouble(), oldPrice: (j['oldPrice'] as num? ?? 0).toDouble(), category: j['category'] ?? '', isOffer: j['isOffer'] ?? false, isFav: j['isFav'] ?? false, imagePath: j['imagePath'], iconName: j['iconName'] ?? 'phone');
-IconData getProductIcon(String name) {
+staticIconData getProductIcon(String name) {
   if (name == 'charge') return Icons.charging_station;
   if (name == 'head') return Icons.headphones;
   if (name == 'cable') return Icons.cable;
