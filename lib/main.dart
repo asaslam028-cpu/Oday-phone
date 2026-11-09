@@ -223,7 +223,6 @@ class _OdayHomeState extends State<OdayHome> {
   @override
   void initState() {
     super.initState();
-    _void_listen();
     _loadProductsFromFirebase();
     _listenSettings();
     // === الإضافة الجديدة - تشغيل التقليب التلقائي كل ثانيتين ===
