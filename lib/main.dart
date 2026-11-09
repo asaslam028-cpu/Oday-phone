@@ -485,7 +485,10 @@ onUpdateProduct: (i, p) async {
   if (p.id != null) {
     await FirebaseFirestore.instance.collection('products').doc(p.id).update(p.toJson());
   }
-  setState(() { products[i] = p; });
+ setState(() {
+  final idx = products.indexWhere((e) => e.id == p.id);
+  if (idx != -1) { products[idx] = p; }
+});
 },
 onDeleteProduct: (id) async {
   await FirebaseFirestore.instance.collection('products').doc(id).delete();
