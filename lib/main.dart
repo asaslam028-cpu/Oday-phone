@@ -883,7 +883,7 @@ onDeleteProduct: (id) async {
           ),
         ),
         const SizedBox(height: 10),
-        Expanded(child: GridView.builder(padding: const EdgeInsets.all(16), gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.72), itemCount: filteredStore.length, itemBuilder: (ctx, i) => _productCard(filteredStore[i]))),
+        Expanded(child: GridView.builder(padding: const EdgeInsets.all(16), gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.62), itemCount: filteredStore.length, itemBuilder: (ctx, i) => _productCard(filteredStore[i]))),
       ],
     );
   }
