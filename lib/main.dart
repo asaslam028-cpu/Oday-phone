@@ -1896,9 +1896,9 @@ class _InstallmentPageState extends State<InstallmentPage> {
               )
             : ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.file(file, fit: BoxFit.cover, width: double.infinity)),
       ),
-    );
+    )
   }
-
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
