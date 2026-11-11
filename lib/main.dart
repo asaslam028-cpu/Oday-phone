@@ -1823,8 +1823,7 @@ class _AdminProductFormState extends State<AdminProductForm> {
     );
   }
 }
-import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+
 
 // صفحة طلب التقسيط
 class InstallmentPage extends StatefulWidget {
@@ -1943,7 +1942,7 @@ class _InstallmentPageState extends State<InstallmentPage> {
                     barrierDismissible: false,
                     builder: (context) => AlertDialog(
                       title: const Text('تم استلام طلبك بنجاح ✅'),
-                      content: const Text('شكراً يا ${_nameController.text}،\n\nتم استلام طلب التقسيط الخاص بك.\nسيتم الاستعلام والاتصال بك قريباً لتأكيد الطلب.\n\nفريق ODAY'),
+                      content: Text('شكراً يا ${_nameController.text}،\n\nتم استلام طلب التقسيط الخاص بك.\nسيتم الاستعلام والاتصال بك قريباً لتأكيد الطلب.\n\nفريق ODAY'),
                       actions: [
                         TextButton(onPressed: () { Navigator.pop(context); Navigator.pop(context); }, child: const Text('تمام'))
                       ],
