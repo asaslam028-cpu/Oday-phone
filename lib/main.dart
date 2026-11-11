@@ -1873,32 +1873,31 @@ class _InstallmentPageState extends State<InstallmentPage> {
     );
   }
 
-  Widget _uploadBox(String title, File? file, bool isFront) {
-    return GestureDetector(
-      onTap: () => _pickImage(isFront),
-      child: Container(
-        width: double.infinity,
-        height: 140,
-        decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
+ Widget _uploadBox(String title, File? file, bool isFront) {
+      return GestureDetector(
+        onTap: () => _pickImage(isFront),
+        child: Container(
+          width: double.infinity,
+          height: 140,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
+          ),
+          child: file == null
+              ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.camera_alt_outlined, size: 32, color: Colors.black54),
+                    const SizedBox(height: 8),
+                    Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    const Text('دوس هنا لرفع الصورة', style: TextStyle(color: Colors.black54, fontSize: 13)),
+                  ],
+                )
+              : ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.file(file, fit: BoxFit.cover, width: double.infinity)),
         ),
-        child: file == null
-            ? Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.camera_alt_outlined, size: 32, color: Colors.black54),
-                  const SizedBox(height: 8),
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  const Text('دوس هنا لرفع الصورة', style: TextStyle(color: Colors.black54, fontSize: 13)),
-                ],
-              )
-            : ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.file(file, fit: BoxFit.cover, width: double.infinity)),
-      ),
-    )
-  }
-}
+      );
+    }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
