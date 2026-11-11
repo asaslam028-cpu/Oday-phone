@@ -20,7 +20,8 @@ jobs:
       - name: Fix Android
         run: |
           rm -rf android
-          flutter create . --platforms=android --org com.oday --project-name phone
+          flutter create . --platforms=android --org com.oday --project-name oday_store
+          sed -i 's/android:label="[^"]*"/android:label="عدي ستور"/' android/app/src/main/AndroidManifest.xml
           cp /tmp/g.json android/app/google-services.json
       - run: flutter pub get
       - run: flutter pub run flutter_launcher_icons
