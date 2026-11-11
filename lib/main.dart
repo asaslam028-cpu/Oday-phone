@@ -817,7 +817,7 @@ GestureDetector(
   },
   child: Container(
     width: double.infinity,
-    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 😎,
+    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
       color: Colors.white,
@@ -1955,6 +1955,9 @@ class _InstallmentPageState extends State<InstallmentPage> {
               ),
             ),
             const SizedBox(height: 12),
-            const Center(child: Text('بال
-ستختفي الرسالة في غضون: 23h
-خلال 23h
+            const Center(child: Text('')),
+      ],
+    ),
+  ),
+);
+
