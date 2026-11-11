@@ -1958,5 +1958,6 @@ class _InstallmentPageState extends State<InstallmentPage> {
     ),
   ),
 );
-
+  }
+}
     
