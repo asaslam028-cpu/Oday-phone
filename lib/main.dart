@@ -547,11 +547,11 @@ onDeleteProduct: (id) async {
                 child: Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: accentOrange, borderRadius: BorderRadius.circular(30)), child: const Icon(Icons.phone_android, size: 70, color: Colors.white)),
               ),
               const SizedBox(height: 20),
-              const Text('عدي فون', style: TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold)),
+              const Text('Oday', style: TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
-              const Text('مرحبا بكم في عدي فون', style: TextStyle(color: Colors.white, fontSize: 20)),
+              const Text(' وجهتك الاولي لصيانه الموبيل والاكسسوارات', style: TextStyle(color: Colors.white, fontSize: 20)),
               const SizedBox(height: 10),
-              const Text('صيانة موبايلات ومتجر اكسسوارات', style: TextStyle(color: Colors.white70, fontSize: 16), textAlign: TextAlign.center),
+              const Text('ضمان حقيقي ع منتجاتنا', style: TextStyle(color: Colors.white70, fontSize: 16), textAlign: TextAlign.center),
               const SizedBox(height: 30),
               SizedBox(
                 width: double.infinity,
@@ -573,7 +573,7 @@ onDeleteProduct: (id) async {
       backgroundColor: navyBg,
       appBar: AppBar(
         backgroundColor: navyDark,
-        title: const Text('عدي فون', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text('Oday', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         actions: [
           Stack(
             children: [
@@ -660,7 +660,7 @@ onDeleteProduct: (id) async {
                       children: [
                         const Expanded(
                           child: Text(
-                            'عروض عدي فون 🔥',
+                            'عروض Oday 🔥',
                             style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                           ),
                         ),
@@ -727,7 +727,7 @@ onDeleteProduct: (id) async {
                         children: [
                           const Expanded(
                             child: Text(
-                              'عروض عدي فون 🔥',
+                              'عروض Oday 🔥',
                               style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                             ),
                           ),
@@ -788,7 +788,7 @@ onDeleteProduct: (id) async {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('مرحبا بكم في عدي فون', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+          const Text('خبره تثق فيها وموبايل يرجع جديد', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
           const SizedBox(height: 12),
           TextField(onChanged: (v) => setState(() => searchText = v), style: const TextStyle(color: Colors.white), decoration: InputDecoration(hintText: 'دور على جراب، شاحن، سماعة، سكرينة...', prefixIcon: const Icon(Icons.search, color: Colors.white70), filled: true, fillColor: navyCard, border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none))),
           const SizedBox(height: 16),
@@ -807,6 +807,50 @@ onDeleteProduct: (id) async {
             ),
           ),
           const SizedBox(height: 16),
+          // كارت التقسيط المباشر - نسخة نهائية
+GestureDetector(
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const InstallmentPage()),
+    );
+  },
+  child: Container(
+    width: double.infinity,
+    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 😎,
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: Colors.grey.shade300),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(12)),
+              child: const Icon(Icons.payments_outlined, color: Colors.white, size: 24),
+            ),
+            const SizedBox(width: 12),
+            const Text('تقسيط مباشر', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black)),
+          ],
+        ),
+        const SizedBox(height: 12),
+        const Text('قسّط موبايلك أو صيانتك على دفعات مريحة، من غير بنك ومن غير تعقيد', style: TextStyle(fontSize: 15, color: Colors.black54, height: 1.5)),
+        const SizedBox(height: 14),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(12)),
+          child: const Center(child: Text('اعرف تفاصيل التقسيط - دوس هنا', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold))),
+        ),
+      ],
+    ),
+  ),
+),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
@@ -1779,3 +1823,138 @@ class _AdminProductFormState extends State<AdminProductForm> {
     );
   }
 }
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+
+// صفحة طلب التقسيط
+class InstallmentPage extends StatefulWidget {
+  const InstallmentPage({super.key});
+  @override
+  State<InstallmentPage> createState() => _InstallmentPageState();
+}
+
+class _InstallmentPageState extends State<InstallmentPage> {
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _nationalIdController = TextEditingController();
+  final _wantedController = TextEditingController();
+  File? _idFront;
+  File? _idBack;
+  final ImagePicker _picker = ImagePicker();
+
+  Future<void> _pickImage(bool isFront) async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      setState(() {
+        if (isFront) _idFront = File(image.path);
+        else _idBack = File(image.path);
+      });
+    }
+  }
+
+  Widget _field(String label, TextEditingController c, {TextInputType type = TextInputType.text, String hint = ''}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+        const SizedBox(height: 6),
+        TextField(
+          controller: c,
+          keyboardType: type,
+          decoration: InputDecoration(
+            hintText: hint,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+            fillColor: Colors.grey.shade100,
+          ),
+        ),
+        const SizedBox(height: 14),
+      ],
+    );
+  }
+
+  Widget _uploadBox(String title, File? file, bool isFront) {
+    return GestureDetector(
+      onTap: () => _pickImage(isFront),
+      child: Container(
+        width: double.infinity,
+        height: 140,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
+        ),
+        child: file == null
+            ? Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.camera_alt_outlined, size: 32, color: Colors.black54),
+                  const SizedBox(height: 8),
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  const Text('دوس هنا لرفع الصورة', style: TextStyle(color: Colors.black54, fontSize: 13)),
+                ],
+              )
+            : ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.file(file, fit: BoxFit.cover, width: double.infinity)),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('طلب تقسيط مباشر'), backgroundColor: Colors.black, foregroundColor: Colors.white, centerTitle: true),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('املأ بياناتك وهنكلمك', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            const Text('بياناتك في أمان، ومش بتتشارك مع حد.', style: TextStyle(color: Colors.black54)),
+            const SizedBox(height: 20),
+            _field('الاسم بالكامل *', _nameController, hint: 'زي اللي في البطاقة بالظبط'),
+            _field('رقم الموبايل *', _phoneController, type: TextInputType.phone, hint: '01xxxxxxxxx'),
+            _field('العنوان بالتفصيل *', _addressController, hint: 'المحافظة - المركز - الشارع - رقم البيت'),
+            _field('الرقم القومي *', _nationalIdController, type: TextInputType.number, hint: '14 رقم'),
+            _field('عايز تقسّط ايه؟', _wantedController, hint: 'مثال: موبايل سامسونج A55 أو صيانة شاشة'),
+            const Text('صورة البطاقة - وش *', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            const SizedBox(height: 6),
+            _uploadBox('صورة البطاقة وش', _idFront, true),
+            const SizedBox(height: 14),
+            const Text('صورة البطاقة - ضهر *', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            const SizedBox(height: 6),
+            _uploadBox('صورة البطاقة ضهر', _idBack, false),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  if (_nameController.text.isEmpty || _phoneController.text.isEmpty || _addressController.text.isEmpty || _nationalIdController.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('من فضلك املأ كل البيانات المطلوبة')));
+                    return;
+                  }
+                  if (_idFront == null || _idBack == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('من فضلك ارفع صورة البطاقة وش وضهر')));
+                    return;
+                  }
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (context) => AlertDialog(
+                      title: const Text('تم استلام طلبك بنجاح ✅'),
+                      content: const Text('شكراً يا ${_nameController.text}،\n\nتم استلام طلب التقسيط الخاص بك.\nسيتم الاستعلام والاتصال بك قريباً لتأكيد الطلب.\n\nفريق ODAY'),
+                      actions: [
+                        TextButton(onPressed: () { Navigator.pop(context); Navigator.pop(context); }, child: const Text('تمام'))
+                      ],
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.black, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                child: const Text('ابعت طلب التقسيط', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Center(child: Text('بال
+ستختفي الرسالة في غضون: 23h
+خلال 23h
