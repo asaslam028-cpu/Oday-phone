@@ -1853,16 +1853,18 @@ class _InstallmentPageState extends State<InstallmentPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+        Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
         const SizedBox(height: 6),
         TextField(
           controller: c,
           keyboardType: type,
+          style: const TextStyle(color: Colors.black),
           decoration: InputDecoration(
             hintText: hint,
+            hintStyle: TextStyle(color: Colors.grey.shade600, fontSize: 14),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
-            fillColor: Colors.grey.shade100,
+            fillColor: Colors.white,
           ),
         ),
         const SizedBox(height: 14),
@@ -1870,54 +1872,56 @@ class _InstallmentPageState extends State<InstallmentPage> {
     );
   }
 
- Widget _uploadBox(String title, File? file, bool isFront) {
-      return GestureDetector(
-        onTap: () => _pickImage(isFront),
-        child: Container(
-          width: double.infinity,
-          height: 140,
-          decoration: BoxDecoration(
-            color: Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
-          ),
-          child: file == null
-              ? Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.camera_alt_outlined, size: 32, color: Colors.black54),
-                    const SizedBox(height: 8),
-                    Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    const Text('دوس هنا لرفع الصورة', style: TextStyle(color: Colors.black54, fontSize: 13)),
-                  ],
-                )
-              : ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.file(file, fit: BoxFit.cover, width: double.infinity)),
+  Widget _uploadBox(String title, File? file, bool isFront) {
+    return GestureDetector(
+      onTap: () => _pickImage(isFront),
+      child: Container(
+        width: double.infinity,
+        height: 140,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade300),
         ),
-      );
-    }
+        child: file == null
+            ? Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.camera_alt_outlined, size: 32, color: Colors.black54),
+                  const SizedBox(height: 8),
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+                  const Text('دوس هنا لرفع الصورة', style: TextStyle(color: Colors.black54, fontSize: 13)),
+                ],
+              )
+            : ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.file(file, fit: BoxFit.cover, width: double.infinity)),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF122A4D),
       appBar: AppBar(title: const Text('طلب تقسيط مباشر'), backgroundColor: Colors.black, foregroundColor: Colors.white, centerTitle: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('املأ بياناتك وهنكلمك', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const Text('املأ بياناتك وهنكلمك', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
             const SizedBox(height: 4),
-            const Text('بياناتك في أمان، ومش بتتشارك مع حد.', style: TextStyle(color: Colors.black54)),
+            const Text('بياناتك في أمان، ومش بتتشارك مع حد.', style: TextStyle(color: Colors.white70)),
             const SizedBox(height: 20),
             _field('الاسم بالكامل *', _nameController, hint: 'زي اللي في البطاقة بالظبط'),
             _field('رقم الموبايل *', _phoneController, type: TextInputType.phone, hint: '01xxxxxxxxx'),
             _field('العنوان بالتفصيل *', _addressController, hint: 'المحافظة - المركز - الشارع - رقم البيت'),
             _field('الرقم القومي *', _nationalIdController, type: TextInputType.number, hint: '14 رقم'),
             _field('عايز تقسّط ايه؟', _wantedController, hint: 'مثال: موبايل سامسونج A55 أو صيانة شاشة'),
-            const Text('صورة البطاقة - وش *', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            const Text('صورة البطاقة - وش *', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
             const SizedBox(height: 6),
             _uploadBox('صورة البطاقة وش', _idFront, true),
             const SizedBox(height: 14),
-            const Text('صورة البطاقة - ضهر *', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            const Text('صورة البطاقة - ضهر *', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
             const SizedBox(height: 6),
             _uploadBox('صورة البطاقة ضهر', _idBack, false),
             const SizedBox(height: 20),
@@ -1945,16 +1949,15 @@ class _InstallmentPageState extends State<InstallmentPage> {
                     ),
                   );
                 },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.black, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                 child: const Text('ابعت طلب التقسيط', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
               ),
             ),
             const SizedBox(height: 12),
-            const Center(child: Text('')),
-      ],
-    ),
-  ),
-);
+          ],
+        ),
+      ),
+    );
   }
 }
     
