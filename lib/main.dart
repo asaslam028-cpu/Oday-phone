@@ -808,47 +808,45 @@ onDeleteProduct: (id) async {
           ),
           const SizedBox(height: 16),
           // كارت التقسيط المباشر - نسخة نهائية
-GestureDetector(
-  onTap: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const InstallmentPage()),
-    );
-  },
-  child: Container(
-    width: double.infinity,
-    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Colors.grey.shade300),
+Container(
+  width: double.infinity,
+  padding: const EdgeInsets.all(16),
+  decoration: BoxDecoration(
+    borderRadius: BorderRadius.circular(16),
+    gradient: const LinearGradient(
+      colors: [Color(0xFFFF8A00), Color(0xFF122A4D)],
+      begin: Alignment.topRight,
+      end: Alignment.bottomLeft,
     ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(12)),
-              child: const Icon(Icons.payments_outlined, color: Colors.white, size: 24),
-            ),
-            const SizedBox(width: 12),
-            const Text('تقسيط مباشر', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black)),
-          ],
+  ),
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+            child: const Icon(Icons.credit_card, color: Colors.white, size: 26),
+          ),
+          const SizedBox(width: 12),
+          const Text('تقسيط مباشر', style: TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.bold)),
+        ],
+      ),
+      const SizedBox(height: 12),
+      const Text('قسّط موبايلك أو صيانتك على دفعات مريحة، من غير بنك ومن غير تعقيد', style: TextStyle(color: Colors.white, fontSize: 14, height: 1.5)),
+      const SizedBox(height: 14),
+      SizedBox(
+        width: double.infinity,
+        height: 48,
+        child: ElevatedButton(
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const InstallmentPage())),
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.orange, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+          child: const Text('اعرف تفاصيل التقسيط - دوس هنا', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
         ),
-        const SizedBox(height: 12),
-        const Text('قسّط موبايلك أو صيانتك على دفعات مريحة، من غير بنك ومن غير تعقيد', style: TextStyle(fontSize: 15, color: Colors.black54, height: 1.5)),
-        const SizedBox(height: 14),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(12)),
-          child: const Center(child: Text('اعرف تفاصيل التقسيط - دوس هنا', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold))),
-        ),
-      ],
-    ),
+      ),
+    ],
   ),
 ),
           Container(
