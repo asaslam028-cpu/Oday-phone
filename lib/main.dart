@@ -889,7 +889,6 @@ GestureDetector(
       ),
     );
   }
-
   Widget _otherServiceCard(String title, IconData icon, String kind) {
     return Container(
       padding: const EdgeInsets.all(16),
